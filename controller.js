@@ -6,72 +6,87 @@ const {
 
 // 跨链桥地址
 const bridge_address = {
-    7545: "",
-    8545: "",
-    // QK: "0x58B05C1430d8b19A6541b0b4c4c2e8746F97F9af",
-    // HECO: "0x58B05C1430d8b19A6541b0b4c4c2e8746F97F9af",
-    // ETH: "0x58B05C1430d8b19A6541b0b4c4c2e8746F97F9af",
-    // BSC: "0x58B05C1430d8b19A6541b0b4c4c2e8746F97F9af",
-    // OKEX: "0x58B05C1430d8b19A6541b0b4c4c2e8746F97F9af",
+    // 7545: "",
+    // 8545: "",
+    QK: "",
+    ROP: "",
+    // HECO: "",
+    // ETH: "",
+    // BSC: "",
+    // OKEX: "",
 }
 
 // 管理员密钥
 const pk = {
-    7545: "",
-    8545: ""
+    QK: "",
+    ROP: "",
+    // 7545: "",
+    // 8545: ""
 }
+//  
+// 
 
 
+//  
+// 6c1c
 
 // 跨链桥ABI
 const bridge_abi = [
-    "event Sended(string,address,address,uint256)",
-    "function recharge(address,address,uint256)",
-    "function send(address,address,uint256)",
+    "event Sended(string,address,uint256)",
+    "function recharge(address,uint256)",
+    "function send(address,uint256)",
 ]
 
 // 支持的跨链代币
 const tokens = {
-    7545: {
-        // 外链代币 : 本链代币
-        '': '' // CCT(8545)-CCT(7545)
-    },
-    8545: {
-        // 外链代币 : 本链代币
-        '': '' // CCT(7545)-CCT(8545)
-    }
+    // 7545: {
+    //     // 外链代币 : 本链代币
+    //     '0x0E9512f985F9F1ef9531170788973f6719a5a503': '0xD5A30F4002bb545A785E85be0DCd1C00604f6846' // CCT(8545)-CCT(7545)
+    // },
+    // 8545: {
+    //     // 外链代币 : 本链代币
+    //     '0xD5A30F4002bb545A785E85be0DCd1C00604f6846': '0x0E9512f985F9F1ef9531170788973f6719a5a503' // CCT(7545)-CCT(8545)
+    // },
     // Local: {
     //     0x66006a5360d82B05bBf59bC394aC0093eAecf87C: 0x5DC98770a4BBA0A4cE9443E2198D5B6ebB7ADDFA, // QK-FEG
     // },
-    // QK: {
-    //     0x5DC98770a4BBA0A4cE9443E2198D5B6ebB7ADDFA: 0x66006a5360d82B05bBf59bC394aC0093eAecf87C, // Local-FEG
-    // },
+    QK: {
+        0x46677d627fA43fCFE7D5c382387bE8dF96c6ffd5: 0x46677d627fA43fCFE7D5c382387bE8dF96c6ffd5, // doo(rop)-doo(qk)
+    },
+    ROP: {
+        0x46677d627fA43fCFE7D5c382387bE8dF96c6ffd5: 0x46677d627fA43fCFE7D5c382387bE8dF96c6ffd5, // doo(qk)-doo(rop)
+    }
     // HECO: {
     //     0x5ba42785254fC7AC9282F2515892AB20BcD63aEA: 0x5ba42785254fC7AC9282F2515892AB20BcD63aEA
     // }
 }
 
 // 支持链主网
-const urls = [{
-        name: 7545,
-        url: "http://127.0.0.1:7545"
-    },
-    {
-        name: 8545,
-        url: "http://127.0.0.1:8545"
-    }
+const urls = [
+    // {
+    //     name: 7545,
+    //     url: "http://127.0.0.1:7545"
+    // },
+    // {
+    //     name: 8545,
+    //     url: "http://127.0.0.1:8545"
+    // }
     // {
     //     name: "Local",
     //     url: "http://127.0.0.1:7545"
     // },
     // {
     //     name: "ETH",
-    //     url: "https://mainnet.infura.io/v3/fddb1d98064647dd8bce19afb8b48059"
+    //     url: "https://mainnet.infura.io/v3/#"
     // },
-    // {
-    //     name: "QK",
-    //     url: "http://sg.node.quarkblockchain.org"
-    // },
+    {
+        name: "QK",
+        url: "http://sg.node.quarkblockchain.org"
+    },
+    {
+        name: "ROP",
+        url: "https://ropsten.infura.io/v3/#"
+    },
     // {
     //     name: "HECO",
     //     url: "https://http-mainnet-node.huobichain.com"
@@ -121,7 +136,7 @@ async function main() {
         const filter = {
             // https://docs.ethers.io/v5/api/providers/provider/#Provider--events
             // https://docs.ethers.io/v5/api/providers/types/#providers-EventFilter
-            // address: "",
+            // address: "0x3Cf054A2c78A536373c8Fc998AA643B4072A4181",
             topics: [
                 ethers.utils.id('Transfer(address,address,uint256)'),
                 null,
@@ -130,16 +145,16 @@ async function main() {
         }
 
         const contract = bridge_contracts[item.name]
-        contract.on("Sended", (network, token, address, value) => {
+        contract.on("Sended", (network, address, value) => {
             // console.log(network, token, address, value)
             const _value = value.toString()
             // 调用跨链桥转账
             const toContract = bridge_contracts[network]
             if (toContract) {
-                toContract.send(tokens[network][token], address, _value).then(_ => {
-                    console.log("[提币] 链 " + item.name, "到链 " + network, "代币 " + token, "地址 " + address, "数额 " + _value)
+                toContract.send(address, _value).then(_ => {
+                    console.log("[提币] 链 " + item.name, "到链 " + network, "地址 " + address, "数额 " + _value)
                 }).catch(error => {
-                    console.log("[提币失败] 链 " + item.name, "到链 " + network, "代币 " + token, "地址 " + address, "数额 " + _value)
+                    console.log("[提币失败] 链 " + item.name, "到链 " + network, "地址 " + address, "数额 " + _value)
                     console.log(error.message)
                 })
             }
@@ -161,8 +176,8 @@ async function main() {
                     log.topics[1]
                 )[0]
                 if (num > 0) {
-                    contract.recharge(token, from, num)
-                    console.log("[充值] 链 " + item.name, "代币 " + token, "地址 " + from, "数额 " + num)
+                    contract.recharge(from, num)
+                    console.log("[充值] 链 " + item.name, "地址 " + from, "数额 " + num)
                 }
             }
         })
