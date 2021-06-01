@@ -241,6 +241,10 @@ interface IERC20 {
         address indexed spender,
         uint256 value
     );
+    
+    function mint(address account, uint256 amount) external; // 铸币
+    
+    function burn(uint256 _value) external returns (bool success); // 燃烧
 }
 
 // 1.部署跨链桥合约
@@ -250,31 +254,13 @@ interface IERC20 {
 contract Bridge {
     address public owner;
     using SafeMath for uint256;
+    address public cct;
 
     // 发送代币到外网
-    event Sended(string, address, address, uint256);
-    // 代币-账号-余额
-    mapping(address => mapping(address => uint256)) public balances;
+    event Sended(string, address, uint256);
+    // 账号-余额
+    mapping(address => uint256) public balances;
 
-    // 账号
-    struct Account {
-        address owner; // 所有者
-        string network; // 主网
-        string name; // 名称
-        address account;
-    }
-
-    // 全部账号
-    Account[] private accounts;
-
-    // 资产
-    struct Assert {
-        string name; // 名称
-        address token; // 地址
-        uint256 balance; // 兑换仓剩余数额
-    }
-
-    Assert[] public asserts;
 
     modifier onlyOwner {
         require(msg.sender == owner, "Only owner can call this function.");
@@ -285,143 +271,47 @@ contract Bridge {
         owner = msg.sender;
     }
 
-    // 对比字符串
-    function compareStr(string memory _str1, string memory _str2)
-        public
-        pure
-        returns (bool)
-    {
-        if (bytes(_str1).length == bytes(_str2).length) {
-            if (
-                keccak256(abi.encodePacked(_str1)) ==
-                keccak256(abi.encodePacked(_str2))
-            ) {
-                return true;
-            }
-        }
-        return false;
-    }
 
-    // 给自己添加一个外网账号
-    function account_insert(
-        string memory _network,
-        string memory _name,
-        address _account
-    ) public {
-        require(_account != address(0), "Account address cannot be empty");
-        accounts.push(Account(msg.sender, _network, _name, _account));
-    }
 
     function set_owner(address _address) public onlyOwner {
         owner = _address;
     }
-
-    // 兑换外网资产到指定地址
-    function exchange_to_account(
-        string memory _network,
-        address _token,
-        address _account,
-        uint256 _value
-    ) public {
-        address _rAccount = address(0);
-        for (uint256 i = 0; i < accounts.length; i++) {
-            if (
-                accounts[i].owner == msg.sender &&
-                accounts[i].account == _account
-            ) {
-                _rAccount = accounts[i].account;
-            }
-        }
-        require(_rAccount != address(0), "Invalid receive address");
-        for (uint256 i = 0; i < asserts.length; i++) {
-            if (
-                asserts[i].token == _token
-            ) {
-                asserts[i].balance = asserts[i].balance.sub(_value);
-                break;
-            }
-        }
-        balances[_token][msg.sender] = balances[_token][msg.sender].sub(_value);
-        emit Sended(_network, _token, _account, _value);
+    
+    // 设置cct合约地址
+    function set_cct_address(address _address) public onlyOwner {
+        cct = _address;
     }
 
     // 兑换外网资产
     function exchange(
         string memory _network,
-        address _token,
         uint256 _value
     ) public {
-        uint256 _balance = 0;
-        for (uint256 i = 0; i < asserts.length; i++) {
-            if (
-                asserts[i].token == _token
-            ) {
-                _balance = asserts[i].balance;
-                break;
-            }
-        }
-        require(
-            _balance > _value,
-            "The reserve of the exchange pool is insufficient and cannot be exchanged"
-        );
-        
-        balances[_token][msg.sender] = balances[_token][msg.sender].sub(_value);
-        emit Sended(_network, _token, msg.sender, _value);
+        balances[msg.sender] = balances[msg.sender].sub(_value);
+        // 子链
+        IERC20 token = IERC20(cct);
+        token.burn(_value);
+        emit Sended(_network,msg.sender, _value);
     }
 
     // 外链充值入本链发送代币[管理员]
     function send(
-        address _token,
         address _address,
         uint256 _value
     ) public onlyOwner {
-        IERC20 token = IERC20(_token);
-        token.transfer(_address, _value);
-        for (uint256 i = 0; i < asserts.length; i++) {
-            if (
-                asserts[i].token == _token
-            ) {
-                asserts[i].balance = asserts[i].balance.sub(_value);
-                break;
-            }
-        }
-        
+        // 子链
+        IERC20 token = IERC20(cct);
+        token.mint(_address, _value);
+        // 主链
+        // IERC20 token = IERC20(cct);
+        // token.transfer(_address, _value);
     }
 
     // 充值操作[管理员]
     function recharge(
-        address _token,
         address _address,
         uint256 _value
     ) public onlyOwner {
-        for (uint256 i = 0; i < asserts.length; i++) {
-            if (
-                asserts[i].token == _token
-            ) {
-                asserts[i].balance = asserts[i].balance.add(_value);
-                break;
-            }
-        }
-        balances[_token][_address] = balances[_token][_address].add(_value);
-    }
-
-    // 添加兑换资产
-    function assert_insert(
-        string memory _name,
-        address _token,
-        uint256 _value
-    ) public onlyOwner {
-        asserts.push(
-            Assert({
-                name: _name,
-                token: _token,
-                balance: _value
-            })
-        );
-    }
-
-    // 支持的兑换资产数量
-    function asserts_length() public view returns (uint256) {
-        return asserts.length;
+        balances[_address] = balances[_address].add(_value);
     }
 }
