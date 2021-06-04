@@ -178,8 +178,8 @@ interface IERC20 {
      * Emits a {Transfer} event.
      */
     function transfer(address recipient, uint256 amount)
-        external
-        returns (bool);
+    external
+    returns (bool);
 
     /**
      * @dev Returns the remaining number of tokens that `spender` will be
@@ -189,9 +189,9 @@ interface IERC20 {
      * This value changes when {approve} or {transferFrom} are called.
      */
     function allowance(address owner, address spender)
-        external
-        view
-        returns (uint256);
+    external
+    view
+    returns (uint256);
 
     /**
      * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.
@@ -241,29 +241,75 @@ interface IERC20 {
         address indexed spender,
         uint256 value
     );
-    
+
     function mint(address account, uint256 amount) external; // 铸币
-    
+
     function burn(uint256 _value) external returns (bool success); // 燃烧
 }
 
-// 1.部署跨链桥合约
-// 2.脚本开始监听跨链桥合约代币转账接收
-// 3.脚本接收跨链桥兑外链代币事件
-// 4.脚本调用外链的充值事件
+contract BridgeAdmin {
+
+    address public admin;
+
+    struct Token {
+        bool isRun; // 是否运行
+        bool isMain; // 是否主链
+        string network; // 链
+        address remote; // 外链地址
+    }
+
+    mapping(address => Token) public tokens;
+
+    event adminChanged(address _address);
+
+    modifier onlyAdmin() {
+        require(msg.sender == admin, "only use admin to call");
+        _;
+    }
+
+    constructor() {
+        admin = msg.sender;
+    }
+
+    function tokenCanBridge(address _token) view external returns(bool){
+        return tokens[_token].isRun;
+    }
+
+
+    function addToken(address local,string memory network ,address remote,bool isRun,bool isMain) external onlyAdmin{
+        tokens[local] = Token({
+        isRun:isRun,
+        isMain:isMain,
+        network:network,
+        remote:remote
+        });
+    }
+
+    function closeToken(address local) external onlyAdmin{
+        tokens[local].isRun=false;
+    }
+}
+
 contract Bridge {
+
     address public owner;
+
+    address public admin;
+
     using SafeMath for uint256;
-    address public cct;
 
-    // 发送代币到外网
-    event Sended(string, address, uint256);
-    // 账号-余额
-    mapping(address => uint256) public balances;
+    event Exchanged(string, address, uint256);
 
+    event Sended(address, address, uint256);
 
     modifier onlyOwner {
-        require(msg.sender == owner, "Only owner can call this function.");
+        require(msg.sender == owner, "only owner can call this function.");
+        _;
+    }
+
+    modifier canBridge(address _token) {
+        BridgeAdmin bridgeAdmin = BridgeAdmin(admin);
+        require(bridgeAdmin.tokenCanBridge(_token), "token is can not use bridge.");
         _;
     }
 
@@ -271,47 +317,46 @@ contract Bridge {
         owner = msg.sender;
     }
 
-
-
-    function set_owner(address _address) public onlyOwner {
-        owner = _address;
-    }
-    
-    // 设置cct合约地址
-    function set_cct_address(address _address) public onlyOwner {
-        cct = _address;
+    function setAdmin(address payable newAdmin) public onlyOwner {
+        admin = newAdmin;
     }
 
-    // 兑换外网资产
+    function setOwner(address payable newOwner) public onlyOwner {
+        owner = newOwner;
+    }
+
+    // 本链兑换外链代币 [管理员]
     function exchange(
-        string memory _network,
+        address _token,
         uint256 _value
-    ) public {
-        balances[msg.sender] = balances[msg.sender].sub(_value);
-        // 子链
-        IERC20 token = IERC20(cct);
-        token.burn(_value);
-        emit Sended(_network,msg.sender, _value);
+    ) public onlyOwner canBridge(_token)  {
+        BridgeAdmin bridgeAdmin = BridgeAdmin(admin);
+        (,bool isMain,string memory network,) = bridgeAdmin.tokens(_token);
+        if(!isMain){
+            // 侧链 燃烧
+            IERC20 token = IERC20(_token);
+            token.burn(_value);
+        }
+        emit Exchanged(network,msg.sender, _value);
     }
 
-    // 外链充值入本链发送代币[管理员]
+    // 外链兑换本链代币 [管理员]
     function send(
         address _address,
-        uint256 _value
-    ) public onlyOwner {
-        // 子链
-        IERC20 token = IERC20(cct);
-        token.mint(_address, _value);
-        // 主链
-        // IERC20 token = IERC20(cct);
-        // token.transfer(_address, _value);
-    }
-
-    // 充值操作[管理员]
-    function recharge(
-        address _address,
-        uint256 _value
-    ) public onlyOwner {
-        balances[_address] = balances[_address].add(_value);
+        uint256 _value,
+        address _token
+    ) public onlyOwner canBridge(_token){
+        BridgeAdmin bridgeAdmin = BridgeAdmin(admin);
+        (,bool isMain,,) = bridgeAdmin.tokens(_token);
+        if(isMain){
+            // 主链 转账
+            IERC20 token = IERC20(_token);
+            token.transfer(_address, _value);
+        }else{
+            // 侧链 铸币
+            IERC20 token = IERC20(_token);
+            token.mint(_address, _value);
+        }
+        emit Sended(_token,_address,_value);
     }
 }

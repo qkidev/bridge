@@ -1,6 +1,12 @@
-支持跨链桥合约需要实现在ERC20标准下另外附加一下约定的功能
+支持跨链桥合约需要实现在ERC20标准.
 
-功能: 铸币(mint)  
-功能: 燃烧(burn)  
-功能: 赎回(redeem)  
-功能: issue  
+另外附加以下约定的功能
+
+铸币  
+function mint(address account, uint256 amount) public
+
+燃烧代币  
+function burn(uint256 _value) public returns (bool success)
+
+设置铸币员  
+function setMiner(address newMiner) public  
