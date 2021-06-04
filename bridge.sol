@@ -254,11 +254,14 @@ contract BridgeAdmin {
     struct Token {
         bool isRun; // 是否运行
         bool isMain; // 是否主链
-        string network; // 链
+        string chain; // 链
         address remote; // 外链地址
+        uint256 deposit; // 质押余额
     }
 
     mapping(address => Token) public tokens;
+
+    Token[] public tokens2;
 
     event adminChanged(address _address);
 
@@ -267,40 +270,47 @@ contract BridgeAdmin {
         _;
     }
 
-    constructor() {
-        admin = msg.sender;
+    function tokenLength() view returns(uint256) {
+        return tokens2.length;
     }
 
-    function tokenCanBridge(address _token) view external returns(bool){
+    function tokenCanBridge(address _token) view internal returns (bool){
         return tokens[_token].isRun;
     }
 
-
-    function addToken(address local,string memory network ,address remote,bool isRun,bool isMain) external onlyAdmin{
+    function addToken(address local, string memory chain, address remote, bool isRun, bool isMain) external onlyAdmin {
         tokens[local] = Token({
-        isRun:isRun,
-        isMain:isMain,
-        network:network,
-        remote:remote
+        isRun : isRun,
+        isMain : isMain,
+        chain : chain,
+        remote : remote,
+        deposit : 0
         });
+
+        tokens2.push(Token({
+        isRun : isRun,
+        isMain : isMain,
+        chain : chain,
+        remote : remote,
+        deposit : 0
+        }));
     }
 
-    function closeToken(address local) external onlyAdmin{
-        tokens[local].isRun=false;
+    function closeToken(address local) external onlyAdmin {
+        tokens[local].isRun = false;
     }
 }
 
-contract Bridge {
+contract Bridge is BridgeAdmin {
 
     address public owner;
 
-    address public admin;
-
     using SafeMath for uint256;
 
-    event Exchanged(string, address, uint256);
 
-    event Sended(address, address, uint256);
+    event DepositToken(string, address, uint256);
+
+    event WithdrawDoneToken(address, address, uint256);
 
     modifier onlyOwner {
         require(msg.sender == owner, "only owner can call this function.");
@@ -308,8 +318,7 @@ contract Bridge {
     }
 
     modifier canBridge(address _token) {
-        BridgeAdmin bridgeAdmin = BridgeAdmin(admin);
-        require(bridgeAdmin.tokenCanBridge(_token), "token is can not use bridge.");
+        require(tokenCanBridge(_token), "token is can not use bridge.");
         _;
     }
 
@@ -326,37 +335,37 @@ contract Bridge {
     }
 
     // 本链兑换外链代币 [管理员]
-    function exchange(
+    function depositToken(
         address _token,
         uint256 _value
-    ) public onlyOwner canBridge(_token)  {
-        BridgeAdmin bridgeAdmin = BridgeAdmin(admin);
-        (,bool isMain,string memory network,) = bridgeAdmin.tokens(_token);
-        if(!isMain){
+    ) public onlyOwner canBridge(_token) {
+        Token storage _assert = tokens[_token];
+        if (!_assert.isMain) {
             // 侧链 燃烧
             IERC20 token = IERC20(_token);
             token.burn(_value);
+        } else {
+            _assert.deposit = _assert.deposit.add(_value);
         }
-        emit Exchanged(network,msg.sender, _value);
+        emit DepositToken(_assert.chain, msg.sender, _value);
     }
 
     // 外链兑换本链代币 [管理员]
-    function send(
+    function withdrawToken(
         address _address,
         uint256 _value,
         address _token
-    ) public onlyOwner canBridge(_token){
-        BridgeAdmin bridgeAdmin = BridgeAdmin(admin);
-        (,bool isMain,,) = bridgeAdmin.tokens(_token);
-        if(isMain){
+    ) public onlyOwner canBridge(_token) {
+        Token storage _assert = tokens[_token];
+        if (_assert.isMain) {
             // 主链 转账
             IERC20 token = IERC20(_token);
             token.transfer(_address, _value);
-        }else{
+        } else {
             // 侧链 铸币
             IERC20 token = IERC20(_token);
             token.mint(_address, _value);
         }
-        emit Sended(_token,_address,_value);
+        emit WithdrawDoneToken(_token, _address, _value);
     }
 }
