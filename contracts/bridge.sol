@@ -382,6 +382,7 @@ contract Bridge is BridgeAdmin {
     mapping(address => mapping(address => uint256)) public balanceOf;
 
     constructor() {
+        admin = msg.sender;
         owner = msg.sender;
     }
 
@@ -422,7 +423,7 @@ contract Bridge is BridgeAdmin {
     }
 
     // 外链兑换本链代币 [管理员]
-    function withdrawToken(
+    function withdraw(
         string memory chain,
         address remote,
         address recipient,
