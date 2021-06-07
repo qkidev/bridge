@@ -140,16 +140,15 @@ async function main() {
         }
 
         const contract = bridge_contracts[item.name]
-        contract.on("Sended", (network, address, value) => {
-            // console.log(network, token, address, value)
+        contract.on("Deposit", (chain, token, address, value) => {
             const _value = value.toString()
             // 调用跨链桥转账
-            const toContract = bridge_contracts[network]
+            const toContract = bridge_contracts[chain]
             if (toContract) {
-                toContract.send(address, _value).then(_ => {
-                    console.log("[提币] 链 " + item.name, "到链 " + network, "地址 " + address, "数额 " + _value)
+                toContract.withdraw(chain, token, address, _value).then(_ => {
+                    console.log("[提币] 链 " + item.name, "到链 " + chain, "代币 " + token, "地址 " + address, "数额 " + _value)
                 }).catch(error => {
-                    console.log("[提币失败] 链 " + item.name, "到链 " + network, "地址 " + address, "数额 " + _value)
+                    console.log("[提币失败] 链 " + item.name, "到链 " + chain, "代币 " + token, "地址 " + address, "数额 " + _value)
                     console.log(error.message)
                 })
             }
@@ -171,8 +170,8 @@ async function main() {
                     log.topics[1]
                 )[0]
                 if (num > 0) {
-                    contract.recharge(from, num)
-                    console.log("[充值] 链 " + item.name, "地址 " + from, "数额 " + num)
+                    contract.recharge(from, token, num)
+                    console.log("[充值] 链 " + item.name, "代币 " + token, "地址 " + from, "数额 " + num)
                 }
             }
         })
