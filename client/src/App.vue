@@ -3,7 +3,7 @@
         <van-col class="main" span="24" v-if="state.installed_mask">
             <div class="main">
                 <van-nav-bar title="夸克跨链桥"></van-nav-bar>
-                <van-form @submit="onExchange">
+                <van-form @submit="onDeposit">
                     <van-cell title="" clickable>
                         <template #label>
                             <div>主网:{{state.network.name}}</div>
@@ -11,79 +11,33 @@
                             <div>余额:{{state.network_balance}}</div>
                         </template>
                     </van-cell>
-                    <van-field label="跨链桥余额" :model-value="state.bridge_balance" readonly>
-                        <template #button>
-                            <van-button size="small" type="primary" @click="onShowRecharge">充值</van-button>
-                            <van-popup v-model:show="state.showRecharge" position="bottom">
-                                <van-form @submit="onRecharge">
-                                    <van-field label="余额" :model-value="state.cct_balance" readonly></van-field>
-                                    <van-field v-model="state.cct_recharge_number" type="number" label="数额">
-                                        <template #button>
-                                            <van-button size="small" type="primary" @click="rechargeMax">全部</van-button>
-                                        </template>
-                                    </van-field>
-                                    <div style="margin: 16px;">
-                                        <van-button block type="primary" native-type="submit"
-                                                    :loading="state.recharge_loading">
-                                            提交
-                                        </van-button>
-                                    </div>
-                                </van-form>
-                            </van-popup>
-                        </template>
-                    </van-field>
-                    <van-field
-                            v-model="state.toNetwork"
-                            readonly
-                            clickable
-                            name="toNetwork"
-                            label="转入链"
-                            placeholder="选择转入链"
-                            @click="state.showToNetworkPicker = true"
-                    />
-                    <van-popup v-model:show="state.showToNetworkPicker" position="bottom">
-                        <van-picker
-                                :columns="state.to_networks"
-                                @confirm="onConfirmToNetwork"
-                                @cancel="state.showToNetworkPicker = false"
-                        />
-                    </van-popup>
-                    <van-field v-model="state.bridge_number" type="number" label="数额">
-                        <template #button>
-                            <van-button size="small" type="primary" @click="bridgeMax">全部</van-button>
-                        </template>
-                    </van-field>
-                    <div style="margin: 16px;">
-                        <van-button block type="primary" native-type="submit" :loading="state.exchange_loading">
-                            兑换
-                        </van-button>
-                    </div>
-                </van-form>
 
-
-                <van-card>
-                    <van-cell-group title="目标">
-                        <van-cell clickable :label="state.deposit.target.address">
-                            <template #title>{{state.deposit.target.symbol}}({{state.deposit.target.chain}})</template>
-                            <van-button size="mini" type="danger" @click="state.show.deposit.target=true">选择
+                    <van-cell-group title="兑换目标">
+                        <van-cell v-for="(item,index) in state.targets" :key="index" :title="item.symbol" clickable
+                                  @click="set_target(item)" center>
+                            <template #label>
+                                <div>目标链: {{item.chain}}</div>
+                                <div>{{item.remote}}</div>
+                            </template>
+                            <van-button size="mini" v-if="state.target === item" type="danger" icon="success">
                             </van-button>
                         </van-cell>
                     </van-cell-group>
 
-                    <van-field v-model="state.deposit.balance" readonly
-                               :label="state.deposit.target.symbol+'余额'"></van-field>
-
-                    <van-field v-model="state.deposit.number" label="数额"></van-field>
-
-                    <van-button block @click="onDeposit">兑换</van-button>
-                </van-card>
-
-                <van-popup v-model:show="state.show.deposit.target">
-                    <van-cell v-for="(item,index) in state.deposit.items" :key="index" :title="item.symbol">
-                        <van-button size="mini" @click="setDepositTarget(item)">兑换</van-button>
-                    </van-cell>
-
-                </van-popup>
+                    <van-field v-model="state.bridge_number" type="number" label="数额"
+                               :placeholder="state.token_balance">
+                        <template #button>
+                            <van-button size="small" type="primary" @click="bridgeMax" :loading="state.loading.balance">
+                                全部
+                            </van-button>
+                        </template>
+                    </van-field>
+                    <div style="margin: 16px;">
+                        <van-button block type="primary" native-type="submit" :loading="state.loading.deposit">
+                            跨链
+                        </van-button>
+                    </div>
+                </van-form>
             </div>
         </van-col>
         <van-col :span="24" v-else>
@@ -104,6 +58,8 @@
     let signer = ref({})
 
     const state = reactive({
+        bridge: "",
+        loading: {balance: false},
         show: {deposit: {target: false}},
         deposit: {target: {chain: '', symbol: ''}, balance: 0},
         targets: [],
@@ -130,6 +86,7 @@
         installed_mask: true,
         exchange_loading: false,
         recharge_loading: false,
+        token_balance: ""
     });
 
     onMounted(async () => {
@@ -138,36 +95,101 @@
             state.accounts = await ethereum.request({method: 'eth_requestAccounts'})
             state.account = state.accounts[0]
             provider = new ethers.providers.Web3Provider(web3.currentProvider)
+            signer = provider.getSigner()
             const network = await provider.getNetwork()
-            // console.log(network)
             if (network.chainId === 20181205) network.name = "quarkblockchain"
+            get_bridge(network.chainId)
+            get_targets(network.chainId)
             state.network = network
             state.to_networks = state.to_networks.filter(item => item !== network.name)
             const balance = await provider.getBalance(state.account)
             state.network_balance = ethers.utils.formatEther(balance)
-            signer = provider.getSigner();
-            await getBridgeBalance()
-            await getChainTargets()
+
         } else {
             state.installed_mask = false
         }
     })
 
-    const onDeposit = async () => {
+    const set_target = async (target) => {
+        if (state.target !== target) {
+            state.target = target
+            await getBalance(target)
+        }
+    }
+
+    const getBalance = async (target) => {
+        state.token_balance = ""
+        state.loading.balance = true
         const abi = [
-            "function transfer(address, uint256) public returns(bool success)"
+            "function balanceOf(address) view returns (uint256)"
         ]
-        const token = new ethers.Contract(state.deposit.target.address, abi, signer)
-        const tx = await token.transfer(state.bridges[state.network], state.deposit.number)
+        const contract = new ethers.Contract(target.local, abi, signer)
+        const balance = await contract.balanceOf(state.account)
+        state.token_balance = balance.toString()
+        state.loading.balance = false
+    }
+
+    const get_bridge = (chain) => {
+        state.bridge = "0x17cA9AB6206B5CB35EA2c955505C9AE84faC091A"
+    }
+
+    const get_targets = (chain) => {
+        const targets = {
+            "1337": [
+                {
+                    chain: "8545",
+                    remote: "0xd9145CCE52D386f254917e481eB44e9943F39138",
+                    local: "0x5575d7e8C5BecBB9e788504aAf415BF162a7B252",
+                    symbol: "cmm"
+                }
+            ]
+        }
+        state.targets = targets[chain]
+        set_target(state.targets[0])
+    }
+
+    const onDeposit = async () => {
+        state.loading.deposit = true
+
+        const token = new ethers.Contract(state.target.local, [
+            "function approve(address spender, uint256 amount) external returns (bool)"
+        ], signer)
+
+        try {
+            const approve = await token.approve(state.bridge, state.bridge_number)
+            await approve.wait()
+        } catch (e) {
+            Toast("授权失败")
+            state.loading.deposit = false
+            return false
+        }
+        const abi = [
+            "function deposit(string, address, uint256)"
+        ]
+        const bridge = new ethers.Contract(state.bridge, abi, signer)
+        try {
+            console.log(state.target)
+            const tx = await bridge.deposit(state.target.chain, state.target.remote, state.bridge_number)
+            await tx.wait()
+        } catch (e) {
+            console.log(e)
+            const message = e.data.message
+            const arr = message.split(':')
+            const messages = {
+                "revert token is can not use bridge": `${state.target.symbol} 暂时无法跨链`
+            }
+            Toast(messages[arr[1].trim()] || '跨链失败')
+            state.loading.deposit = false
+            return false
+        }
+
+        state.loading.deposit = false
+        Toast("跨链完成")
     }
 
     const setDepositTarget = async (target) => {
         state.deposit.target = target
         state.show.deposit.target = false
-    }
-
-    const deposit = async () => {
-
     }
 
     const getChainTargets = async (chain) => {
@@ -187,7 +209,7 @@
 
     // 兑换全部
     const bridgeMax = () => {
-        state.bridge_number = state.bridge_balance
+        state.bridge_number = state.token_balance
     }
 
     // 充值全部
