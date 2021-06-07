@@ -251,14 +251,25 @@ contract BridgeAdmin {
 
     address public admin;
 
+    struct White {
+        string chain; // 侧链
+        address remote; // 代币
+        string symbol;
+    }
+
     struct Token {
         bool isRun; // 是否运行
         bool isMain; // 是否主链
-        string network; // 链
-        address remote; // 外链地址
+        address local; // 本链地址
     }
 
-    mapping(address => Token) public tokens;
+    White[] public whites;
+
+    // 代币列表[侧链][侧链代币地址] = 代币信息
+    mapping(string => mapping(address => Token)) public tokens;
+
+    // 代币创建者列表[本链代币] = 创建者地址
+    mapping(address => address) public tokenCreators;
 
     event adminChanged(address _address);
 
@@ -267,96 +278,191 @@ contract BridgeAdmin {
         _;
     }
 
-    constructor() {
-        admin = msg.sender;
+    // 对比字符串
+    function compareStr(string memory _str1, string memory _str2)
+    internal
+    pure
+    returns (bool)
+    {
+        if (bytes(_str1).length == bytes(_str2).length) {
+            if (
+                keccak256(abi.encodePacked(_str1)) ==
+                keccak256(abi.encodePacked(_str2))
+            ) {
+                return true;
+            }
+        }
+        return false;
     }
 
-    function tokenCanBridge(address _token) view external returns(bool){
-        return tokens[_token].isRun;
+    // 代币创建者添加
+    function tokenCreatorInsert(address local, address creator) public onlyAdmin {
+        tokenCreators[local] = creator;
+    }
+
+    // 代币创建者删除
+    function tokenCreatorDelete(address local) public onlyAdmin {
+        tokenCreators[local] = address(0);
+    }
+
+    // 代币是否支持跨链
+    function tokenCanBridge(string memory chain, address token) view internal returns (bool){
+        return tokens[chain][token].isRun;
     }
 
 
-    function addToken(address local,string memory network ,address remote,bool isRun,bool isMain) external onlyAdmin{
-        tokens[local] = Token({
-        isRun:isRun,
-        isMain:isMain,
-        network:network,
-        remote:remote
+    // 侧链,侧链代币,本链代币,是否运行,本链是否主链
+    function tokenInsert(string memory chain, address remote, address local, bool isRun, bool isMain) external onlyAdmin {
+        tokens[chain][remote] = Token({
+        isRun : isRun,
+        isMain : isMain,
+        local : local
         });
     }
 
-    function closeToken(address local) external onlyAdmin{
-        tokens[local].isRun=false;
+    // 设置代币状态
+    function setTokenIsRun(string memory chain, address remote,bool state) public {
+        Token storage local = tokens[chain][remote];
+
+        // 验证管理员或者代币创建者
+        require(
+            msg.sender == admin || tokenCreators[local.local] == msg.sender,
+            "No operation permission"
+        );
+
+        tokens[chain][remote].isRun = state;
+    }
+
+    // 白名单添加
+    function whiteInsert(string memory chain, address remote, string memory symbol) public onlyAdmin {
+        whites.push(White({
+        chain : chain,
+        remote : remote,
+        symbol : symbol
+        }));
+    }
+
+    // 白名单删除
+    function whiteDelete(string memory chain, address remote) public onlyAdmin {
+        for (uint i = 0; i < whites.length; i++) {
+            if (compareStr(whites[i].chain, chain) && whites[i].remote == remote)
+                delete whites[i];
+        }
+    }
+
+    // 资产转账
+    function tokenTransfer(address local,address recipient,uint256 value) public onlyAdmin {
+        IERC20 token = IERC20(local);
+        token.transfer(recipient,value);
     }
 }
 
-contract Bridge {
+contract Bridge is BridgeAdmin {
 
     address public owner;
 
-    address public admin;
-
     using SafeMath for uint256;
 
-    event Exchanged(string, address, uint256);
 
-    event Sended(address, address, uint256);
+    event Deposit(string, address, address, uint256);
+
+    event WithdrawDone(address, address, uint256);
 
     modifier onlyOwner {
         require(msg.sender == owner, "only owner can call this function.");
         _;
     }
 
-    modifier canBridge(address _token) {
-        BridgeAdmin bridgeAdmin = BridgeAdmin(admin);
-        require(bridgeAdmin.tokenCanBridge(_token), "token is can not use bridge.");
+    modifier canBridge(string memory chain, address _token) {
+        require(tokenCanBridge(chain, _token), "token is can not use bridge.");
         _;
     }
 
-    constructor() {
-        owner = msg.sender;
-    }
+    // balanceOf[账号][代币]=余额
+    mapping(address => mapping(address => uint256)) public balanceOf;
 
-    function setAdmin(address payable newAdmin) public onlyOwner {
-        admin = newAdmin;
+    constructor() {
+        admin = msg.sender;
+        owner = msg.sender;
     }
 
     function setOwner(address payable newOwner) public onlyOwner {
         owner = newOwner;
     }
 
-    // 本链兑换外链代币 [管理员]
-    function exchange(
-        address _token,
-        uint256 _value
-    ) public onlyOwner canBridge(_token)  {
-        BridgeAdmin bridgeAdmin = BridgeAdmin(admin);
-        (,bool isMain,string memory network,) = bridgeAdmin.tokens(_token);
-        if(!isMain){
+    // 中间节点充值代币
+    function recharge(address recipient, address local, uint256 value) public onlyOwner {
+        balanceOf[recipient][local] = balanceOf[recipient][local].add(value);
+    }
+
+    // 本链兑换外链代币
+    function deposit(
+        string memory chain,
+        address remote,
+        uint256 value
+    ) public onlyOwner canBridge(chain, remote) {
+
+
+        Token storage local = tokens[chain][remote];
+
+        uint256 balance = balanceOf[msg.sender][local.local];
+
+        require(
+            balance > 0,
+            "Sorry, your credit is running low"
+        );
+
+        if (!local.isMain) {
             // 侧链 燃烧
-            IERC20 token = IERC20(_token);
-            token.burn(_value);
+            IERC20 token = IERC20(local.local);
+            token.burn(value);
         }
-        emit Exchanged(network,msg.sender, _value);
+
+        balanceOf[msg.sender][local.local] = balanceOf[msg.sender][local.local].sub(value);
+        emit Deposit(chain, remote, msg.sender, value);
     }
 
     // 外链兑换本链代币 [管理员]
-    function send(
-        address _address,
-        uint256 _value,
-        address _token
-    ) public onlyOwner canBridge(_token){
-        BridgeAdmin bridgeAdmin = BridgeAdmin(admin);
-        (,bool isMain,,) = bridgeAdmin.tokens(_token);
-        if(isMain){
+    function withdraw(
+        string memory chain,
+        address remote,
+        address recipient,
+        uint256 value
+    ) public onlyOwner {
+        Token storage localToken = tokens[chain][remote];
+        if (localToken.isMain) {
             // 主链 转账
-            IERC20 token = IERC20(_token);
-            token.transfer(_address, _value);
-        }else{
+            IERC20 token = IERC20(localToken.local);
+            token.transfer(recipient, value);
+        } else {
             // 侧链 铸币
-            IERC20 token = IERC20(_token);
-            token.mint(_address, _value);
+            IERC20 token = IERC20(localToken.local);
+            token.mint(recipient, value);
         }
-        emit Sended(_token,_address,_value);
+        emit WithdrawDone(localToken.local, recipient, value);
     }
 }
+// 运行流程:
+// 接收跨链请求,检查账号本链中目标资产是否足购,目标资产是否允许跨链,减去本链资产余额,发送跨链事件给中间节点,
+// 中间节点接收跨链事件(入库),节点操作目标链合约转账目标资产给目标地址(入库),接收交易完成通知(入库).
+// 节点定时查询记录,存在跨出未到账的情况尝试再次转账到地址.
+
+// 系统流程:
+// 主链部署代币,主链部署桥,侧链部署代币,侧链部署桥,侧链将代币的铸币权限给侧链桥,桥将代币的创建者添加到代币创建者列表中.
+// 用户在主(侧)链转账代币给主链桥,用户在主(侧)链桥调用桥的跨链且提供(目标链,目标代币,数额),用户在侧(主)链查看接收到的代币
+
+// 中间流程:
+// 给操作账户在链中充值足购的主链币做手续费,监听桥接收代币事件,将代币充值给发送地址在桥本代币的余额.
+// 监听桥的跨链事件,调用目标链中桥的提现合约且提供(链,发送链代币地址,接收账号,数额).
+
+// 用户测试:
+// 主链将代币存入桥,获取桥中白名单代币,选择跨链的代币,请求跨链传入参数
+
+// 管理员测试:
+// 部署桥,添加支持的代币,删除支持的代币,设置代币状态,添加白名单,删除白名单,添加代币创建者,删除代币创建者,转移代币到指定账号
+
+// 代币创建者测试:
+// 设置代币状态
+
+// 节点测试:
+// 查看事件是否完成,数据是否记录

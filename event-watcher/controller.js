@@ -8,8 +8,8 @@ const {
 const bridge_address = {
     // 7545: "",
     // 8545: "",
-    QK: "",
-    ROP: "",
+    qk: "",
+    rop: "",
     // HECO: "",
     // ETH: "",
     // BSC: "",
@@ -18,23 +18,18 @@ const bridge_address = {
 
 // 管理员密钥
 const pk = {
-    QK: "",
-    ROP: "",
+    qk: "",
+    rop: "",
     // 7545: "",
     // 8545: ""
 }
-//  
-// 
-
-
-//  
-// 6c1c
 
 // 跨链桥ABI
 const bridge_abi = [
-    "event Sended(string,address,uint256)",
-    "function recharge(address,uint256)",
-    "function send(address,uint256)",
+    "event Deposit(string, address, address, uint256)",
+    "event WithdrawDone(address, address, uint256)",
+    "function recharge(address recipient, address local, uint256 value)",
+    "function withdraw(string memory chain, address remote, address recipient, uint256 value)",
 ]
 
 // 支持的跨链代币
@@ -50,10 +45,10 @@ const tokens = {
     // Local: {
     //     0x66006a5360d82B05bBf59bC394aC0093eAecf87C: 0x5DC98770a4BBA0A4cE9443E2198D5B6ebB7ADDFA, // QK-FEG
     // },
-    QK: {
+    qk: {
         0x46677d627fA43fCFE7D5c382387bE8dF96c6ffd5: 0x46677d627fA43fCFE7D5c382387bE8dF96c6ffd5, // doo(rop)-doo(qk)
     },
-    ROP: {
+    rop: {
         0x46677d627fA43fCFE7D5c382387bE8dF96c6ffd5: 0x46677d627fA43fCFE7D5c382387bE8dF96c6ffd5, // doo(qk)-doo(rop)
     }
     // HECO: {
@@ -145,16 +140,15 @@ async function main() {
         }
 
         const contract = bridge_contracts[item.name]
-        contract.on("Sended", (network, address, value) => {
-            // console.log(network, token, address, value)
+        contract.on("Deposit", (chain, token, address, value) => {
             const _value = value.toString()
             // 调用跨链桥转账
-            const toContract = bridge_contracts[network]
+            const toContract = bridge_contracts[chain]
             if (toContract) {
-                toContract.send(address, _value).then(_ => {
-                    console.log("[提币] 链 " + item.name, "到链 " + network, "地址 " + address, "数额 " + _value)
+                toContract.withdraw(chain, token, address, _value).then(_ => {
+                    console.log("[提币] 链 " + item.name, "到链 " + chain, "代币 " + token, "地址 " + address, "数额 " + _value)
                 }).catch(error => {
-                    console.log("[提币失败] 链 " + item.name, "到链 " + network, "地址 " + address, "数额 " + _value)
+                    console.log("[提币失败] 链 " + item.name, "到链 " + chain, "代币 " + token, "地址 " + address, "数额 " + _value)
                     console.log(error.message)
                 })
             }
@@ -176,8 +170,8 @@ async function main() {
                     log.topics[1]
                 )[0]
                 if (num > 0) {
-                    contract.recharge(from, num)
-                    console.log("[充值] 链 " + item.name, "地址 " + from, "数额 " + num)
+                    contract.recharge(from, token, num)
+                    console.log("[充值] 链 " + item.name, "代币 " + token, "地址 " + from, "数额 " + num)
                 }
             }
         })
