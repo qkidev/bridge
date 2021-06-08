@@ -111,7 +111,7 @@ contract BridgeAdmin {
         require(msg.sender == admin, "only use admin to call");
         _;
     }
-    
+
     function setAdmin(address payable newAdmin) public onlyAdmin {
         admin = newAdmin;
     }
@@ -132,7 +132,7 @@ contract BridgeAdmin {
     }
 
     // 设置代币状态
-    function setTokenIsRun(string memory chain, address remote,bool state) public {
+    function setTokenIsRun(string memory chain, address remote, bool state) public {
         require(
             msg.sender == admin,
             "No operation permission"
@@ -142,19 +142,19 @@ contract BridgeAdmin {
     }
 
     // 资产转账
-    function tokenTransfer(address local,address recipient,uint256 value) public onlyAdmin {
+    function tokenTransfer(address local, address recipient, uint256 value) public onlyAdmin {
         IERC20 token = IERC20(local);
-        token.transfer(recipient,value);
+        token.transfer(recipient, value);
     }
 }
 
 contract Bridge is BridgeAdmin {
 
     address public owner;
-    
-    event Deposit(string, address, address, uint256);
 
-    event WithdrawDone(address, address, uint256);
+    event Deposit(string chain, address remote, address recipient, uint256 value);
+
+    event WithdrawDone(address local,address remote, address recipient, uint256 value);
 
     modifier onlyOwner {
         require(msg.sender == owner, "only owner can call this function");
@@ -183,13 +183,13 @@ contract Bridge is BridgeAdmin {
     ) public canBridge(chain, remote) {
         Token storage local = tokens[chain][remote];
         IERC20 token = IERC20(local.local);
-        token.transferFrom(msg.sender,address(this),value);
-        uint balance = IERC20(local.local).balanceOf(msg.sender);
+        token.transferFrom(msg.sender, address(this), value);
+        // uint balance = token.balanceOf(address(this));
         if (!local.isMain) {
             // 侧链 燃烧
-            token.burn(balance);
+            token.burn(value);
         }
-        emit Deposit(chain, remote, msg.sender, balance);
+        emit Deposit(chain, local.local, msg.sender, value);
     }
 
     // 外链兑换本链代币 [管理员]
@@ -203,11 +203,11 @@ contract Bridge is BridgeAdmin {
         IERC20 token = IERC20(local.local);
         if (local.isMain) {
             // 主链 转账
-            token.transfer(recipient,value);
+            token.transfer(recipient, value);
         } else {
             // 侧链 铸币
-            token.mint(recipient,value);
+            token.mint(recipient, value);
         }
-        emit WithdrawDone(local.local, recipient, value);
+        emit WithdrawDone(local.local,remote, recipient, value);
     }
 }

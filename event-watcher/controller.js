@@ -2,14 +2,75 @@ const {
     ethers
 } = require('ethers')
 
+const fs = require("fs")
+
+require('dotenv').config()
+
+const mysql = require('mysql')
+
+const connection = mysql.createConnection({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_DATABASE,
+})
+
+connection.connect()
+
+const getBlockLock = (chain) => {
+    return new Promise((resolve, reject) => {
+        fs.readFile(__dirname + "/lock/" + chain + ".lock", (err, data) => {
+            if (err) {
+                fs.writeFile(__dirname + "/lock/" + chain + ".lock", "0", _ => {
+                    resolve("0")
+                })
+            } else {
+                resolve(data.toString())
+            }
+        })
+    })
+}
+
+const setBlockLock = (chain, number) => {
+    fs.writeFile(__dirname + "/lock/" + chain + ".lock", number.toString(), _ => {
+    })
+}
+
+
+// console.log(process.env.DB_HOST)
+// connection.connect()
+
 // 跨链桥合约部署参数 管理员地址 是为了保持部署地址nonce为初始值 则每个链部署的跨链桥合约地址一样
 
+const tokens = {
+    "8545": {
+        "0xFf99daF379794921b8100b3D262A9668Fb3c068E": {
+            fee: 2,
+            decimal: 8
+        },
+        "0x8B52c9e3d66034b413FF90087FED530e092c7920": {
+            fee: 2,
+            decimal: 0
+        }
+    },
+    "7545": {
+        "0x50AdE7689Ddd197E29A68b516d30f77D83006C45": {
+            fee: 2,
+            decimal: 8
+        },
+        "0xCA371E99AE6FbB2883B4A5d8c6604f0E747796eC": {
+            fee: 2,
+            decimal: 0
+        }
+    }
+}
+
 // 跨链桥地址
-const bridge_address = {
-    // 7545: "",
-    // 8545: "",
-    qk: "",
-    rop: "",
+const addressBridges = {
+    "7545": "0x53AF942f88b73f835fB3eE1D48A846Da92029184",
+    "8545": "0x3736Ad67E30cCD77C6740Ea4a8e549c04cE439F2",
+    // qk: "",
+    // rop: "",
     // HECO: "",
     // ETH: "",
     // BSC: "",
@@ -18,70 +79,41 @@ const bridge_address = {
 
 // 管理员密钥
 const pk = {
-    qk: "",
-    rop: "",
-    // 7545: "",
-    // 8545: ""
+    // qk: "",
+    // rop: "",
+    "7545": "da5eb18de6d2773c92c73cdb6a18481ac219780bd5680acd47710e0346b48c6f",
+    "8545": "9e2660017e5673db80ce6dc3d4bf89c2928cb4697570dbf01559b065e0eb6c72"
 }
 
 // 跨链桥ABI
-const bridge_abi = [
-    "event Deposit(string, address, address, uint256)",
-    "event WithdrawDone(address, address, uint256)",
-    "function recharge(address recipient, address local, uint256 value)",
-    "function withdraw(string memory chain, address remote, address recipient, uint256 value)",
+const abiBridge = [
+    "event Deposit(string chain, address remote, address recipient, uint256 value)",
+    "event WithdrawDone(address local, address remote, address recipient, uint256 value)",
+    "function withdraw(string chain, address remote, address recipient, uint256 value)",
 ]
-
-// 支持的跨链代币
-const tokens = {
-    // 7545: {
-    //     // 外链代币 : 本链代币
-    //     '0x0E9512f985F9F1ef9531170788973f6719a5a503': '0xD5A30F4002bb545A785E85be0DCd1C00604f6846' // CCT(8545)-CCT(7545)
-    // },
-    // 8545: {
-    //     // 外链代币 : 本链代币
-    //     '0xD5A30F4002bb545A785E85be0DCd1C00604f6846': '0x0E9512f985F9F1ef9531170788973f6719a5a503' // CCT(7545)-CCT(8545)
-    // },
-    // Local: {
-    //     0x66006a5360d82B05bBf59bC394aC0093eAecf87C: 0x5DC98770a4BBA0A4cE9443E2198D5B6ebB7ADDFA, // QK-FEG
-    // },
-    qk: {
-        0x46677d627fA43fCFE7D5c382387bE8dF96c6ffd5: 0x46677d627fA43fCFE7D5c382387bE8dF96c6ffd5, // doo(rop)-doo(qk)
-    },
-    rop: {
-        0x46677d627fA43fCFE7D5c382387bE8dF96c6ffd5: 0x46677d627fA43fCFE7D5c382387bE8dF96c6ffd5, // doo(qk)-doo(rop)
-    }
-    // HECO: {
-    //     0x5ba42785254fC7AC9282F2515892AB20BcD63aEA: 0x5ba42785254fC7AC9282F2515892AB20BcD63aEA
-    // }
-}
 
 // 支持链主网
 const urls = [
-    // {
-    //     name: 7545,
-    //     url: "http://127.0.0.1:7545"
-    // },
-    // {
-    //     name: 8545,
-    //     url: "http://127.0.0.1:8545"
-    // }
-    // {
-    //     name: "Local",
-    //     url: "http://127.0.0.1:7545"
-    // },
+    {
+        name: "7545",
+        url: "http://127.0.0.1:7545"
+    },
+    {
+        name: "8545",
+        url: "http://127.0.0.1:8545"
+    },
     // {
     //     name: "ETH",
     //     url: "https://mainnet.infura.io/v3/#"
     // },
-    {
-        name: "QK",
-        url: "http://sg.node.quarkblockchain.org"
-    },
-    {
-        name: "ROP",
-        url: "https://ropsten.infura.io/v3/#"
-    },
+    // {
+    //     name: "QK",
+    //     url: "http://sg.node.quarkblockchain.org"
+    // },
+    // {
+    //     name: "ROP",
+    //     url: "https://ropsten.infura.io/v3/#"
+    // },
     // {
     //     name: "HECO",
     //     url: "https://http-mainnet-node.huobichain.com"
@@ -98,7 +130,7 @@ const urls = [
 ]
 
 // 全部链的跨链桥合约
-let bridge_contracts = {}
+let bridgeContracts = {}
 
 // 全部服务提供者
 let providers = {}
@@ -110,72 +142,81 @@ let wallets = {}
 urls.forEach(item => {
     const provider = new ethers.providers.JsonRpcProvider(item.url)
     providers[item.name] = provider
-    wallets[item.name] = new ethers.Wallet(pk[item.name], provider);
+    wallets[item.name] = new ethers.Wallet(pk[item.name], provider)
 })
 
 // 设置跨链桥合约
 urls.forEach(item => {
-    bridge_contracts[item.name] = new ethers.Contract(bridge_address[item.name], bridge_abi, wallets[item.name])
+    bridgeContracts[item.name] = new ethers.Contract(addressBridges[item.name], abiBridge, wallets[item.name])
 })
 
-// 收件人是应付款的地址
-// 金额（以wei为单位）指定应发送的以太币数量
-// 随机数可以是任何唯一数字，以防止重放攻击
-// 合约地址 用于防止跨合约的重播攻击
+const getFeeValue = (chain, token, value) => {
+    const feePoint = tokens[chain][token].fee
+    let feeValue = 0
+    if (feePoint) {
+        feeValue = Math.ceil(value * (feePoint / 100))
+    }
+    return feeValue
+}
+
+const logInsert = (data) => {
+    connection.query('INSERT INTO bridge_logs SET ?', data, (error, results, fields) => {
+        if (error) throw error;
+    })
+}
+
+const logUpdate = (status, hash, chainTo, recipient, value) => {
+    connection.query('UPDATE bridge_logs SET status = ?, withdrawHash = ? WHERE withdrawHash is null  and chainTo = ? AND address = ? AND `value` = ?', [status, hash, chainTo, recipient, value], (error, results, fields) => {
+        if (error) throw error;
+    })
+}
 
 async function main() {
-
     urls.forEach(item => {
-
-        // 转账筛选器
-        const filter = {
-            // https://docs.ethers.io/v5/api/providers/provider/#Provider--events
-            // https://docs.ethers.io/v5/api/providers/types/#providers-EventFilter
-            // address: "0x3Cf054A2c78A536373c8Fc998AA643B4072A4181",
-            topics: [
-                ethers.utils.id('Transfer(address,address,uint256)'),
-                null,
-                ethers.utils.hexZeroPad(bridge_address[item.name], 32) // 跨链桥合约地址
-            ]
-        }
-
-        const contract = bridge_contracts[item.name]
-        contract.on("Deposit", (chain, token, address, value) => {
-            const _value = value.toString()
-            // 调用跨链桥转账
-            const toContract = bridge_contracts[chain]
-            if (toContract) {
-                toContract.withdraw(chain, token, address, _value).then(_ => {
-                    console.log("[提币] 链 " + item.name, "到链 " + chain, "代币 " + token, "地址 " + address, "数额 " + _value)
-                }).catch(error => {
-                    console.log("[提币失败] 链 " + item.name, "到链 " + chain, "代币 " + token, "地址 " + address, "数额 " + _value)
-                    console.log(error.message)
-                })
-            }
+        const contract = bridgeContracts[item.name]
+        contract.on("WithdrawDone", (local, remote, recipient, value, event) => {
+            console.log(event.blockHash)
+            // console.log(item.name, local, recipient, value, event.blockNumber)
+            const decimal = tokens[item.name][local].decimal
+            let number = ethers.utils.formatUnits(value, decimal)
+            number = (number * 1).toString()
+            logUpdate('withdraw done', event.blockHash, item.name, recipient, number)
+            console.log("[到账][成功] 链 " + item.name, "代币 " + local, "地址 " + recipient, "数额 " + number)
         })
 
-        const provider = providers[item.name]
-        provider.on(filter, log => {
-            if (!log.removed) {
-                const token = log.address
-                // 获取转账数额
-                const num = ethers.utils.defaultAbiCoder.decode(
-                    ['uint256'],
-                    log.data
-                ).toString()
+        contract.on("Deposit", async (chain, token, address, value, event) => {
+            const decimal = tokens[item.name][token].decimal
 
-                // 取发送地址
-                const from = ethers.utils.defaultAbiCoder.decode(
-                    ['address'],
-                    log.topics[1]
-                )[0]
-                if (num > 0) {
-                    contract.recharge(from, token, num)
-                    console.log("[充值] 链 " + item.name, "代币 " + token, "地址 " + from, "数额 " + num)
+            const blockLock = await getBlockLock(item.name)
+            const blockNow = event.blockNumber
+            if (blockNow > blockLock) {
+                let _value = ethers.utils.formatUnits(value, decimal)
+                const feeValue = getFeeValue(item.name, token, _value)
+                _value -= feeValue
+                const toContract = bridgeContracts[chain]
+                if (toContract) {
+                    const final = ethers.utils.parseUnits(_value.toString(), decimal)
+                    toContract.withdraw(item.name, token, address, final).then(_ => {
+                        logInsert({
+                            depositHash: event.blockHash,
+                            chainFrom: item.name, chainTo: chain, block: blockNow,
+                            toToken: token, address, value: _value, status: 'deposit success'
+                        })
+                        console.log("[跨链][成功] 链 " + item.name, "到链 " + chain, "代币 " + token, "地址 " + address, "数额 " + _value)
+                    }).catch(error => {
+                        logInsert({
+                            chainFrom: item.name, chainTo: chain, block: blockNow, depositHash: event.blockHash,
+                            toToken: token, address, value: _value, status: 'deposit error'
+                        })
+                        console.log("[跨链][失败] 链 " + item.name, "到链 " + chain, "代币 " + token, "地址 " + address, "数额 " + _value)
+                    })
                 }
+                setBlockLock(item.name, blockNow)
             }
         })
     })
 }
 
-main()
+main().then(_ => {
+
+})

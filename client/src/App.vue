@@ -6,7 +6,7 @@
                 <van-form @submit="onDeposit">
                     <van-cell title="" clickable>
                         <template #label>
-                            <div>主网:{{state.network.name}}</div>
+                            <div>主网:{{state.networkId}}</div>
                             <div>账号:{{state.account}}</div>
                             <div>余额:{{state.network_balance}}</div>
                         </template>
@@ -16,6 +16,7 @@
                         <van-cell v-for="(item,index) in state.targets" :key="index" :title="item.symbol" clickable
                                   @click="set_target(item)" center>
                             <template #label>
+                                <div>手续费: {{item.bridgeFee}}%</div>
                                 <div>目标链: {{item.chain}}</div>
                                 <div>{{item.remote}}</div>
                             </template>
@@ -48,11 +49,13 @@
 
 </template>
 
+<!--https://chainid.network/-->
 <script setup>
     import {ethers} from 'ethers'
     import {Toast} from 'vant'
 
     import {reactive, onMounted, ref} from "vue";
+    import {f} from "../dist/assets/vendor.7349c458";
 
     let provider = ref({})
     let signer = ref({})
@@ -86,7 +89,8 @@
         installed_mask: true,
         exchange_loading: false,
         recharge_loading: false,
-        token_balance: ""
+        token_balance: "",
+        networkId: ""
     });
 
     onMounted(async () => {
@@ -97,14 +101,13 @@
             provider = new ethers.providers.Web3Provider(web3.currentProvider)
             signer = provider.getSigner()
             const network = await provider.getNetwork()
+            state.networkId = await ethereum.request({method: 'net_version'})
             if (network.chainId === 20181205) network.name = "quarkblockchain"
-            get_bridge(network.chainId)
-            get_targets(network.chainId)
+            get_bridge(state.networkId)
+            get_targets(state.networkId)
             state.network = network
-            state.to_networks = state.to_networks.filter(item => item !== network.name)
             const balance = await provider.getBalance(state.account)
             state.network_balance = ethers.utils.formatEther(balance)
-
         } else {
             state.installed_mask = false
         }
@@ -125,22 +128,62 @@
         ]
         const contract = new ethers.Contract(target.local, abi, signer)
         const balance = await contract.balanceOf(state.account)
-        state.token_balance = balance.toString()
+        state.token_balance = ethers.utils.formatUnits(balance, target.decimal)
         state.loading.balance = false
     }
 
-    const get_bridge = (chain) => {
-        state.bridge = "0x17cA9AB6206B5CB35EA2c955505C9AE84faC091A"
+    const get_bridge = (networkId) => {
+        const bridges = {
+            "3777": "0x53AF942f88b73f835fB3eE1D48A846Da92029184",
+            "4777": "0x3736Ad67E30cCD77C6740Ea4a8e549c04cE439F2"
+        }
+        state.bridge = bridges[networkId]
     }
 
     const get_targets = (chain) => {
         const targets = {
-            "1337": [
+            "3777": [
                 {
                     chain: "8545",
-                    remote: "0xd9145CCE52D386f254917e481eB44e9943F39138",
-                    local: "0x5575d7e8C5BecBB9e788504aAf415BF162a7B252",
-                    symbol: "cmm"
+                    remote: "0xFf99daF379794921b8100b3D262A9668Fb3c068E",
+                    local: "0x50AdE7689Ddd197E29A68b516d30f77D83006C45",
+                    symbol: "cmm",
+                    decimal: 8,
+                    min: 10,
+                    tokenFee: 5,// 代币转账费
+                    bridgeFee: 2 // 跨链手续费
+                },
+                {
+                    chain: "8545",
+                    remote: "0x8B52c9e3d66034b413FF90087FED530e092c7920",
+                    local: "0xCA371E99AE6FbB2883B4A5d8c6604f0E747796eC",
+                    symbol: "cnn",
+                    decimal: 0,
+                    min: 10,
+                    tokenFee: 5,// 代币转账费
+                    bridgeFee: 2 // 跨链手续费
+                },
+            ],
+            "4777": [
+                {
+                    chain: "7545",
+                    remote: "0x50AdE7689Ddd197E29A68b516d30f77D83006C45",
+                    local: "0xFf99daF379794921b8100b3D262A9668Fb3c068E",
+                    symbol: "cmm",
+                    min: 10,
+                    decimal: 8,
+                    tokenFee: 5,// 代币转账费
+                    bridgeFee: 2 // 跨链手续费
+                },
+                {
+                    chain: "7545",
+                    remote: "0xCA371E99AE6FbB2883B4A5d8c6604f0E747796eC",
+                    local: "0x8B52c9e3d66034b413FF90087FED530e092c7920",
+                    symbol: "cmm",
+                    min: 10,
+                    decimal: 0,
+                    tokenFee: 5,// 代币转账费
+                    bridgeFee: 2 // 跨链手续费
                 }
             ]
         }
@@ -149,14 +192,19 @@
     }
 
     const onDeposit = async () => {
-        state.loading.deposit = true
 
+        if (state.bridge_number < state.target.min) {
+            Toast("最低跨链数额为" + state.target.min)
+            return false
+        }
+
+        state.loading.deposit = true
         const token = new ethers.Contract(state.target.local, [
             "function approve(address spender, uint256 amount) external returns (bool)"
         ], signer)
-
         try {
-            const approve = await token.approve(state.bridge, state.bridge_number)
+            const value = ethers.utils.parseUnits(state.bridge_number.toString(), state.target.decimal)
+            const approve = await token.approve(state.bridge, value)
             await approve.wait()
         } catch (e) {
             Toast("授权失败")
@@ -164,15 +212,20 @@
             return false
         }
         const abi = [
-            "function deposit(string, address, uint256)"
+            "function deposit(string memory chain,address remote,uint256 value)"
         ]
         const bridge = new ethers.Contract(state.bridge, abi, signer)
+
+        let tokenFee = 0
+        if (state.target.tokenFee) {
+            tokenFee = Math.ceil(state.bridge_number * (state.target.tokenFee / 100))
+        }
+        let final = state.bridge_number - tokenFee
         try {
-            console.log(state.target)
-            const tx = await bridge.deposit(state.target.chain, state.target.remote, state.bridge_number)
+            final = ethers.utils.parseUnits(final.toString(), state.target.decimal)
+            const tx = await bridge.deposit(state.target.chain, state.target.remote, final)
             await tx.wait()
         } catch (e) {
-            console.log(e)
             const message = e.data.message
             const arr = message.split(':')
             const messages = {
