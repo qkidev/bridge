@@ -81,8 +81,8 @@ const addressBridges = {
 const pk = {
     // qk: "",
     // rop: "",
-    "7545": "",
-    "8545": ""
+    "7545": "da5eb18de6d2773c92c73cdb6a18481ac219780bd5680acd47710e0346b48c6f",
+    "8545": "9e2660017e5673db80ce6dc3d4bf89c2928cb4697570dbf01559b065e0eb6c72"
 }
 
 // 跨链桥ABI
@@ -166,7 +166,7 @@ const logInsert = (data) => {
 }
 
 const logUpdate = (status, hash, chainTo, recipient, value) => {
-    connection.query('UPDATE bridge_logs SET status = ?, withdrawHash = ? WHERE chainTo = ? AND address = ? AND `value` = ?', [status, hash, chainTo, recipient, value], (error, results, fields) => {
+    connection.query('UPDATE bridge_logs SET status = ?, withdrawHash = ? WHERE withdrawHash is null  and chainTo = ? AND address = ? AND `value` = ?', [status, hash, chainTo, recipient, value], (error, results, fields) => {
         if (error) throw error;
     })
 }
