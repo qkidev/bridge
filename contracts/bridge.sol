@@ -184,12 +184,12 @@ contract Bridge is BridgeAdmin {
         Token storage local = tokens[chain][remote];
         IERC20 token = IERC20(local.local);
         token.transferFrom(msg.sender, address(this), value);
-        uint balance = token.balanceOf(address(this));
+        // uint balance = token.balanceOf(address(this));
         if (!local.isMain) {
             // 侧链 燃烧
-            token.burn(balance);
+            token.burn(value);
         }
-        emit Deposit(chain, local.local, msg.sender, balance);
+        emit Deposit(chain, local.local, msg.sender, value);
     }
 
     // 外链兑换本链代币 [管理员]

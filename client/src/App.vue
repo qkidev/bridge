@@ -6,7 +6,7 @@
                 <van-form @submit="onDeposit">
                     <van-cell title="" clickable>
                         <template #label>
-                            <div>主网:{{state.network.name}}</div>
+                            <div>主网:{{state.networkId}}</div>
                             <div>账号:{{state.account}}</div>
                             <div>余额:{{state.network_balance}}</div>
                         </template>
@@ -48,6 +48,7 @@
 
 </template>
 
+<!--https://chainid.network/-->
 <script setup>
     import {ethers} from 'ethers'
     import {Toast} from 'vant'
@@ -86,7 +87,8 @@
         installed_mask: true,
         exchange_loading: false,
         recharge_loading: false,
-        token_balance: ""
+        token_balance: "",
+        networkId: ""
     });
 
     onMounted(async () => {
@@ -97,14 +99,13 @@
             provider = new ethers.providers.Web3Provider(web3.currentProvider)
             signer = provider.getSigner()
             const network = await provider.getNetwork()
+            state.networkId = await ethereum.request({method: 'net_version'})
             if (network.chainId === 20181205) network.name = "quarkblockchain"
-            get_bridge(network.chainId)
-            get_targets(network.chainId)
+            get_bridge(state.networkId)
+            get_targets(state.networkId)
             state.network = network
-            state.to_networks = state.to_networks.filter(item => item !== network.name)
             const balance = await provider.getBalance(state.account)
             state.network_balance = ethers.utils.formatEther(balance)
-
         } else {
             state.installed_mask = false
         }
@@ -129,17 +130,29 @@
         state.loading.balance = false
     }
 
-    const get_bridge = (chain) => {
-        state.bridge = "0x17cA9AB6206B5CB35EA2c955505C9AE84faC091A"
+    const get_bridge = (networkId) => {
+        const bridges = {
+            "3777": "0x6028c7291Ce8779364253417bBA6CEe24DC10115",
+            "4777": "0x84c1B4327B6c7904fC6B96F6E1D33bf2669a9125"
+        }
+        state.bridge = bridges[networkId]
     }
 
     const get_targets = (chain) => {
         const targets = {
-            "1337": [
+            "3777": [
                 {
                     chain: "8545",
-                    remote: "0xd9145CCE52D386f254917e481eB44e9943F39138",
-                    local: "0x5575d7e8C5BecBB9e788504aAf415BF162a7B252",
+                    remote: "0xFf99daF379794921b8100b3D262A9668Fb3c068E",
+                    local: "0x50AdE7689Ddd197E29A68b516d30f77D83006C45",
+                    symbol: "cmm"
+                }
+            ],
+            "4777": [
+                {
+                    chain: "7545",
+                    remote: "0x50AdE7689Ddd197E29A68b516d30f77D83006C45",
+                    local: "0xFf99daF379794921b8100b3D262A9668Fb3c068E",
                     symbol: "cmm"
                 }
             ]
@@ -155,6 +168,7 @@
             "function approve(address spender, uint256 amount) external returns (bool)"
         ], signer)
 
+        // console.log(state.bridge)
         try {
             const approve = await token.approve(state.bridge, state.bridge_number)
             await approve.wait()
@@ -164,15 +178,15 @@
             return false
         }
         const abi = [
-            "function deposit(string, address, uint256)"
+            "function deposit(string memory chain,address remote,uint256 value)"
         ]
         const bridge = new ethers.Contract(state.bridge, abi, signer)
+        // console.log(state.target)
         try {
-            console.log(state.target)
-            const tx = await bridge.deposit(state.target.chain, state.target.remote, state.bridge_number)
+            const tx = await bridge.deposit(state.target.chain, state.target.remote, state.bridge_number - state.bridge_number * 0.1)
             await tx.wait()
         } catch (e) {
-            console.log(e)
+            // console.log(e)
             const message = e.data.message
             const arr = message.split(':')
             const messages = {

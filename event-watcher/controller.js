@@ -2,9 +2,31 @@ const {
     ethers
 } = require('ethers')
 
+const fs = require("fs")
+const path = require('path')
+
 require('dotenv').config()
 
 const mysql = require('mysql')
+
+const getBlockLock = (chain) => {
+    return new Promise((resolve, reject) => {
+        fs.readFile(__dirname + "/lock/" + chain + ".lock", (err, data) => {
+            if (err) {
+                fs.writeFile(__dirname + "/lock/" + chain + ".lock", "0", _ => {
+                    resolve("0")
+                })
+            } else {
+                resolve(data.toString())
+            }
+        })
+    })
+}
+
+const setBlockLock = (chain, number) => {
+    fs.writeFile(__dirname + "/lock/" + chain + ".lock", number.toString(), _ => {
+    })
+}
 
 const connection = mysql.createConnection({
     host: process.env.DB_HOST,
@@ -19,10 +41,10 @@ const connection = mysql.createConnection({
 
 // 跨链桥地址
 const addressBridges = {
-    // 7545: "",
-    // 8545: "",
-    qk: "",
-    rop: "",
+    "7545": "0x6028c7291Ce8779364253417bBA6CEe24DC10115",
+    "8545": "0x84c1B4327B6c7904fC6B96F6E1D33bf2669a9125",
+    // qk: "",
+    // rop: "",
     // HECO: "",
     // ETH: "",
     // BSC: "",
@@ -31,29 +53,29 @@ const addressBridges = {
 
 // 管理员密钥
 const pk = {
-    qk: "",
-    rop: "",
-    // 7545: "",
-    // 8545: ""
+    // qk: "",
+    // rop: "",
+    "7545": "da5eb18de6d2773c92c73cdb6a18481ac219780bd5680acd47710e0346b48c6f",
+    "8545": "9e2660017e5673db80ce6dc3d4bf89c2928cb4697570dbf01559b065e0eb6c72"
 }
 
 // 跨链桥ABI
 const abiBridge = [
     "event Deposit(string chain, address remote, address recipient, uint256 value)",
     "event WithdrawDone(address local, address recipient, uint256 value)",
-    "function withdraw(string memory chain, address remote, address recipient, uint256 value)",
+    "function withdraw(string chain, address remote, address recipient, uint256 value)",
 ]
 
 // 支持链主网
 const urls = [
-    // {
-    //     name: 7545,
-    //     url: "http://127.0.0.1:7545"
-    // },
-    // {
-    //     name: 8545,
-    //     url: "http://127.0.0.1:8545"
-    // },
+    {
+        name: "7545",
+        url: "http://127.0.0.1:7545"
+    },
+    {
+        name: "8545",
+        url: "http://127.0.0.1:8545"
+    },
     // {
     //     name: "ETH",
     //     url: "https://mainnet.infura.io/v3/#"
@@ -105,22 +127,26 @@ urls.forEach(item => {
 async function main() {
     urls.forEach(item => {
         const contract = bridgeContracts[item.name]
-        contract.on("WithdrawDone", (local, recipient, value) => {
-            connection.connect()
-            connection.query("UPDATE bridge_logs SET isDone = ? WHERE ",[1])
-            connection.end()
-        })
+        // contract.on("WithdrawDone", (local, recipient, value, event) => {
+        //     connection.connect()
+        //     connection.query("UPDATE bridge_logs SET isDone = ? WHERE ",[1])
+        //     connection.end()
+        // })
 
-        contract.on("Deposit", (chain, token, address, value) => {
-            const _value = value.toString()
-            const toContract = bridgeContracts[chain]
-            if (toContract) {
-                toContract.withdraw(item.name, token, address, _value).then(_ => {
-                    console.log("[提币] 链 " + item.name, "到链 " + chain, "代币 " + token, "地址 " + address, "数额 " + _value)
-                }).catch(error => {
-                    console.log("[提币失败] 链 " + item.name, "到链 " + chain, "代币 " + token, "地址 " + address, "数额 " + _value)
-                    console.log(error.message)
-                })
+        contract.on("Deposit", async (chain, token, address, value, event) => {
+            const blockLock = await getBlockLock(item.name)
+            const blockNow = event.blockNumber
+            if (blockNow > blockLock) {
+                const _value = value.toString()
+                const toContract = bridgeContracts[chain]
+                if (toContract) {
+                    toContract.withdraw(item.name, token, address, _value).then(_ => {
+                        console.log("[跨链][成功] 链 " + item.name, "到链 " + chain, "代币 " + token, "地址 " + address, "数额 " + _value)
+                    }).catch(error => {
+                        console.log("[跨链][失败] 链 " + item.name, "到链 " + chain, "代币 " + token, "地址 " + address, "数额 " + _value)
+                    })
+                }
+                setBlockLock(item.name, blockNow)
             }
         })
     })
