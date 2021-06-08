@@ -154,7 +154,7 @@ contract Bridge is BridgeAdmin {
 
     event Deposit(string chain, address remote, address recipient, uint256 value);
 
-    event WithdrawDone(address local, address recipient, uint256 value);
+    event WithdrawDone(address local,address remote, address recipient, uint256 value);
 
     modifier onlyOwner {
         require(msg.sender == owner, "only owner can call this function");
@@ -208,6 +208,6 @@ contract Bridge is BridgeAdmin {
             // 侧链 铸币
             token.mint(recipient, value);
         }
-        emit WithdrawDone(local.local, recipient, value);
+        emit WithdrawDone(local.local,remote, recipient, value);
     }
 }

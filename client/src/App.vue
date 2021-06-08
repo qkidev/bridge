@@ -16,6 +16,7 @@
                         <van-cell v-for="(item,index) in state.targets" :key="index" :title="item.symbol" clickable
                                   @click="set_target(item)" center>
                             <template #label>
+                                <div>手续费: {{item.bridgeFee}}%</div>
                                 <div>目标链: {{item.chain}}</div>
                                 <div>{{item.remote}}</div>
                             </template>
@@ -54,6 +55,7 @@
     import {Toast} from 'vant'
 
     import {reactive, onMounted, ref} from "vue";
+    import {f} from "../dist/assets/vendor.7349c458";
 
     let provider = ref({})
     let signer = ref({})
@@ -126,14 +128,14 @@
         ]
         const contract = new ethers.Contract(target.local, abi, signer)
         const balance = await contract.balanceOf(state.account)
-        state.token_balance = balance.toString()
+        state.token_balance = ethers.utils.formatUnits(balance, target.decimal)
         state.loading.balance = false
     }
 
     const get_bridge = (networkId) => {
         const bridges = {
-            "3777": "0x6028c7291Ce8779364253417bBA6CEe24DC10115",
-            "4777": "0x84c1B4327B6c7904fC6B96F6E1D33bf2669a9125"
+            "3777": "0x53AF942f88b73f835fB3eE1D48A846Da92029184",
+            "4777": "0x3736Ad67E30cCD77C6740Ea4a8e549c04cE439F2"
         }
         state.bridge = bridges[networkId]
     }
@@ -145,15 +147,43 @@
                     chain: "8545",
                     remote: "0xFf99daF379794921b8100b3D262A9668Fb3c068E",
                     local: "0x50AdE7689Ddd197E29A68b516d30f77D83006C45",
-                    symbol: "cmm"
-                }
+                    symbol: "cmm",
+                    decimal: 8,
+                    min: 10,
+                    tokenFee: 5,// 代币转账费
+                    bridgeFee: 2 // 跨链手续费
+                },
+                {
+                    chain: "8545",
+                    remote: "0x8B52c9e3d66034b413FF90087FED530e092c7920",
+                    local: "0xCA371E99AE6FbB2883B4A5d8c6604f0E747796eC",
+                    symbol: "cnn",
+                    decimal: 0,
+                    min: 10,
+                    tokenFee: 5,// 代币转账费
+                    bridgeFee: 2 // 跨链手续费
+                },
             ],
             "4777": [
                 {
                     chain: "7545",
                     remote: "0x50AdE7689Ddd197E29A68b516d30f77D83006C45",
                     local: "0xFf99daF379794921b8100b3D262A9668Fb3c068E",
-                    symbol: "cmm"
+                    symbol: "cmm",
+                    min: 10,
+                    decimal: 8,
+                    tokenFee: 5,// 代币转账费
+                    bridgeFee: 2 // 跨链手续费
+                },
+                {
+                    chain: "7545",
+                    remote: "0xCA371E99AE6FbB2883B4A5d8c6604f0E747796eC",
+                    local: "0x8B52c9e3d66034b413FF90087FED530e092c7920",
+                    symbol: "cmm",
+                    min: 10,
+                    decimal: 0,
+                    tokenFee: 5,// 代币转账费
+                    bridgeFee: 2 // 跨链手续费
                 }
             ]
         }
@@ -162,15 +192,19 @@
     }
 
     const onDeposit = async () => {
-        state.loading.deposit = true
 
+        if (state.bridge_number < state.target.min) {
+            Toast("最低跨链数额为" + state.target.min)
+            return false
+        }
+
+        state.loading.deposit = true
         const token = new ethers.Contract(state.target.local, [
             "function approve(address spender, uint256 amount) external returns (bool)"
         ], signer)
-
-        // console.log(state.bridge)
         try {
-            const approve = await token.approve(state.bridge, state.bridge_number)
+            const value = ethers.utils.parseUnits(state.bridge_number.toString(), state.target.decimal)
+            const approve = await token.approve(state.bridge, value)
             await approve.wait()
         } catch (e) {
             Toast("授权失败")
@@ -181,12 +215,17 @@
             "function deposit(string memory chain,address remote,uint256 value)"
         ]
         const bridge = new ethers.Contract(state.bridge, abi, signer)
-        // console.log(state.target)
+
+        let tokenFee = 0
+        if (state.target.tokenFee) {
+            tokenFee = Math.ceil(state.bridge_number * (state.target.tokenFee / 100))
+        }
+        let final = state.bridge_number - tokenFee
         try {
-            const tx = await bridge.deposit(state.target.chain, state.target.remote, state.bridge_number - state.bridge_number * 0.1)
+            final = ethers.utils.parseUnits(final.toString(), state.target.decimal)
+            const tx = await bridge.deposit(state.target.chain, state.target.remote, final)
             await tx.wait()
         } catch (e) {
-            // console.log(e)
             const message = e.data.message
             const arr = message.split(':')
             const messages = {
