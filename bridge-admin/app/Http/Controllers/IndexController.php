@@ -7,6 +7,12 @@ use Illuminate\Http\Request;
 
 class IndexController extends Controller
 {
+    private function checkKey(string $key)
+    {
+        $local = env('SYNC_KEY');
+        return $local === $key;
+    }
+
     public function getLock(Request $request)
     {
         $chain = $request->input('chain');
