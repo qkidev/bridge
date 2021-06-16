@@ -2,10 +2,10 @@
 
 namespace App\Admin\Repositories;
 
-use App\Models\Token as Model;
+use App\Models\Pair as Model;
 use Dcat\Admin\Repositories\EloquentRepository;
 
-class Token extends EloquentRepository
+class Pair extends EloquentRepository
 {
     /**
      * Model.

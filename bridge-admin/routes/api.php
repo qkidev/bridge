@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\Chain;
-use App\Models\Token;
+use App\Models\Pair;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -42,7 +42,7 @@ Route::get("items", function (Request $request) {
         ]);
     }
     $token = $request->input("token");
-    $items = Token::query()->where("fromChain", $fromChain->id)->when($token, function (Builder $builder, $fromToken) {
+    $items = Pair::query()->where("fromChain", $fromChain->id)->when($token, function (Builder $builder, $fromToken) {
         return $builder->where("fromToken", $fromToken);
     })->orderBy("sort")->get();
     foreach ($items as $item) {
@@ -56,3 +56,5 @@ Route::get("items", function (Request $request) {
         'data' => $grouped->all()
     ]);
 });
+
+

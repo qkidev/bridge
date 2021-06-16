@@ -2,14 +2,14 @@
 
 namespace App\Admin\Controllers;
 
-use App\Admin\Repositories\Token;
+use App\Admin\Repositories\Pair;
 use App\Models\Chain;
 use Dcat\Admin\Form;
 use Dcat\Admin\Grid;
 use Dcat\Admin\Show;
 use Dcat\Admin\Http\Controllers\AdminController;
 
-class TokenController extends AdminController
+class PairController extends AdminController
 {
     /**
      * Make a grid builder.
@@ -18,7 +18,7 @@ class TokenController extends AdminController
      */
     protected function grid()
     {
-        return Grid::make(new Token(), function (Grid $grid) {
+        return Grid::make(new Pair(), function (Grid $grid) {
             $grid->column('id')->sortable();
             $grid->column('fromChain')->display(function () {
                 return Chain::query()->where("id", $this->fromChain)->value("name");
@@ -28,8 +28,8 @@ class TokenController extends AdminController
             });
             $grid->column('name');
             $grid->column('title');
-            $grid->column('fromToken');
-            $grid->column('toToken');
+            $grid->column('fromPair');
+            $grid->column('toPair');
             $grid->column('tokenFee');
             $grid->column('bridgeFee');
             $grid->column('decimal');
@@ -57,12 +57,12 @@ class TokenController extends AdminController
      */
     protected function detail($id)
     {
-        return Show::make($id, new Token(), function (Show $show) {
+        return Show::make($id, new Pair(), function (Show $show) {
             $show->field('id');
             $show->field('bridgeFee');
             $show->field('decimal');
             $show->field('fromChain');
-            $show->field('fromToken');
+            $show->field('fromPair');
             $show->field('icon');
             $show->field('isMain');
             $show->field('minValue');
@@ -71,7 +71,7 @@ class TokenController extends AdminController
             $show->field('title');
             $show->field('toChain');
             $show->field('tokenFee');
-            $show->field('toToken');
+            $show->field('toPair');
         });
     }
 
@@ -82,7 +82,7 @@ class TokenController extends AdminController
      */
     protected function form()
     {
-        return Form::make(new Token(), function (Form $form) {
+        return Form::make(new Pair(), function (Form $form) {
             $form->display('id');
             $form->select('fromChain')->options(
                 Chain::query()->pluck("name", "id")
@@ -93,8 +93,8 @@ class TokenController extends AdminController
             $form->text('name')->required();
             $form->text('title')->required();
             $form->text('decimal')->required()->default(0);
-            $form->text('fromToken');
-            $form->text('toToken')->required();
+            $form->text('fromPair');
+            $form->text('toPair')->required();
             $form->text('tokenFee')->default(0)->required();
             $form->text('bridgeFee')->default(0)->required();
             $form->switch('isMain')->default(0)->required();
