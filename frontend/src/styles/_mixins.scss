@@ -1,0 +1,11 @@
+// 二倍图和三倍图的处理
+@mixin bg-img($url) {
+  background-image: url($url+".png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  @media (-webkit-min-device-pixel-ratio:3),(min-device-pixel-ratio:3) {
+    background-image: url($url+".png");
+    background-size: contain;
+    background-repeat: no-repeat;
+  }
+}
