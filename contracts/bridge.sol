@@ -105,6 +105,9 @@ contract BridgeAdmin {
     // 代币列表[侧链][侧链代币地址] = 代币信息
     mapping(string => mapping(address => Token)) public tokens;
 
+    // 主网币列表[主网] = 是/否
+    mapping(string => bool) public natives;
+
     event adminChanged(address _address);
 
     modifier onlyAdmin() {
@@ -146,6 +149,12 @@ contract BridgeAdmin {
         IERC20 token = IERC20(local);
         token.transfer(recipient, value);
     }
+
+    // 主网币转账
+    function nativeTransfer(address payable recipient, uint256 value) public onlyAdmin {
+        require(address(this).balance > value, "not enough native token");
+        recipient.transfer(value);
+    }
 }
 
 contract Bridge is BridgeAdmin {
@@ -154,7 +163,11 @@ contract Bridge is BridgeAdmin {
 
     event Deposit(string chain, address remote, address recipient, uint256 value);
 
-    event WithdrawDone(address local,address remote, address recipient, uint256 value);
+    event DepositNative(string chain, address recipient, uint256 value);
+
+    event WithdrawDone(address local, address remote, address recipient, uint256 value);
+
+    event WithdrawNativeDone(string fromChain, address recipient, uint256 value);
 
     modifier onlyOwner {
         require(msg.sender == owner, "only owner can call this function");
@@ -208,6 +221,21 @@ contract Bridge is BridgeAdmin {
             // 侧链 铸币
             token.mint(recipient, value);
         }
-        emit WithdrawDone(local.local,remote, recipient, value);
+        emit WithdrawDone(local.local, remote, recipient, value);
+    }
+
+    // 主网币跨出
+    function depositNative(string memory toChain) public payable {
+        require(natives[toChain], "chain is not support");
+        require(msg.value > 0, "value is zero");
+        emit DepositNative(toChain, msg.sender, msg.value);
+    }
+
+    // 主网币跨入
+    function withdrawNative(string memory fromChain, address payable recipient, uint256 value) public onlyOwner {
+        require(natives[fromChain], "chain is not support");
+        require(address(this).balance > value, "not enough native token");
+        recipient.transfer(value);
+        emit WithdrawNativeDone(fromChain, recipient, value);
     }
 }

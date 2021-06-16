@@ -2,6 +2,8 @@ const {
     ethers
 } = require('ethers')
 
+const axios = require('axios').default
+
 const fs = require("fs")
 
 require('dotenv').config()
@@ -31,46 +33,52 @@ const getBlockLock = (chain) => {
     })
 }
 
-const setBlockLock = (chain, number) => {
-    fs.writeFile(__dirname + "/lock/" + chain + ".lock", number.toString(), _ => {
-    })
+const getNativeFee = (fromChain, toChain, value) => {
 }
 
-
-// console.log(process.env.DB_HOST)
-// connection.connect()
+const setBlockLock = (chain, number) => {
+    fs.writeFile(__dirname + "/lock/" + chain + ".lock", number.toString(), _ => {})
+}
 
 // 跨链桥合约部署参数 管理员地址 是为了保持部署地址nonce为初始值 则每个链部署的跨链桥合约地址一样
 
 const tokens = {
-    "8545": {
-        "0xFf99daF379794921b8100b3D262A9668Fb3c068E": {
-            fee: 2,
-            decimal: 8
-        },
-        "0x8B52c9e3d66034b413FF90087FED530e092c7920": {
+    "qk": {
+        "0xE06235AAAA893336f1B38e10499Bef7Acb483EF9": {
             fee: 2,
             decimal: 0
+        },
+        "0x059d5e8be85b0E517F930e00Ddd52AC1Aaf61115": {
+            fee: 2,
+            decimal: 0
+        },
+        "0x5Cad8a1340E624Be90adfd787F6F3248DdF17321": {
+            fee: 2,
+            decimal: 6
         }
     },
-    "7545": {
-        "0x50AdE7689Ddd197E29A68b516d30f77D83006C45": {
-            fee: 2,
-            decimal: 8
-        },
-        "0xCA371E99AE6FbB2883B4A5d8c6604f0E747796eC": {
+    "ropsten": {
+        "0xA52191450806181dEe22AAc5fc074C83c057AC43": {
             fee: 2,
             decimal: 0
+        },
+        "0xb6Cb36df5b88A3e5b547b04368Ebef30f04409a9": {
+            fee: 2,
+            decimal: 0
+        },
+        "0x0B8880087d8A76e03802Cd000e36126665e24363": {
+            fee: 2,
+            decimal: 6
         }
     }
 }
 
 // 跨链桥地址
 const addressBridges = {
-    "7545": "0x53AF942f88b73f835fB3eE1D48A846Da92029184",
-    "8545": "0x3736Ad67E30cCD77C6740Ea4a8e549c04cE439F2",
-    // qk: "",
-    // rop: "",
+    // "7545": "0x53AF942f88b73f835fB3eE1D48A846Da92029184",
+    // "8545": "0x3736Ad67E30cCD77C6740Ea4a8e549c04cE439F2",
+    qk: "0xcF70a42585473F160e7F5191dfe97fA15d5D8F3B",
+    ropsten: "0xF891Ca04EA0276516A7823Ff787f923934dd56Aa",
     // HECO: "",
     // ETH: "",
     // BSC: "",
@@ -79,41 +87,44 @@ const addressBridges = {
 
 // 管理员密钥
 const pk = {
-    // qk: "",
-    // rop: "",
-    "7545": "da5eb18de6d2773c92c73cdb6a18481ac219780bd5680acd47710e0346b48c6f",
-    "8545": "9e2660017e5673db80ce6dc3d4bf89c2928cb4697570dbf01559b065e0eb6c72"
+    qk: process.env.PK_QK,
+    ropsten: process.env.PK_ROPSTEN,
+    // "7545": process.env.PK_7545,
+    // "8545": process.env.PK_8545,
 }
 
 // 跨链桥ABI
 const abiBridge = [
     "event Deposit(string chain, address remote, address recipient, uint256 value)",
+    "event DepositNative(string chain, address recipient, uint256 value)",
     "event WithdrawDone(address local, address remote, address recipient, uint256 value)",
+    "event WithdrawNativeDone(string fromChain, address recipient, uint256 value)",
     "function withdraw(string chain, address remote, address recipient, uint256 value)",
+    "function withdrawNative(string memory fromChain, address payable recipient, uint256 value)"
 ]
 
 // 支持链主网
 const urls = [
-    {
-        name: "7545",
-        url: "http://127.0.0.1:7545"
-    },
-    {
-        name: "8545",
-        url: "http://127.0.0.1:8545"
-    },
+    // {
+    //     name: "7545",
+    //     url: "http://127.0.0.1:7545"
+    // },
+    // {
+    //     name: "8545",
+    //     url: "http://127.0.0.1:8545"
+    // },
     // {
     //     name: "ETH",
     //     url: "https://mainnet.infura.io/v3/#"
     // },
-    // {
-    //     name: "QK",
-    //     url: "http://sg.node.quarkblockchain.org"
-    // },
-    // {
-    //     name: "ROP",
-    //     url: "https://ropsten.infura.io/v3/#"
-    // },
+    {
+        name: "qk",
+        url: "https://hz.node.quarkblockchain.cn"
+    },
+    {
+        name: "ropsten",
+        url: "https://ropsten.infura.io/v3/fddb1d98064647dd8bce19afb8b48059"
+    },
     // {
     //     name: "HECO",
     //     url: "https://http-mainnet-node.huobichain.com"
@@ -175,7 +186,7 @@ async function main() {
     urls.forEach(item => {
         const contract = bridgeContracts[item.name]
         contract.on("WithdrawDone", (local, remote, recipient, value, event) => {
-            console.log(event.blockHash)
+            // console.log(event.blockHash)
             // console.log(item.name, local, recipient, value, event.blockNumber)
             const decimal = tokens[item.name][local].decimal
             let number = ethers.utils.formatUnits(value, decimal)
@@ -184,7 +195,34 @@ async function main() {
             console.log("[到账][成功] 链 " + item.name, "代币 " + local, "地址 " + recipient, "数额 " + number)
         })
 
+        contract.on("DepositNative", async (toChain, recipient, value, event) => {
+            const blockLock = await getBlockLock(item.name)
+            const blockNow = event.blockNumber
+            if (blockNow > blockLock) {
+                const feeValue = getNativeFee(item.name, toChain, value)
+                const toContract = bridgeContracts[toChain]
+                if (toContract) {
+                    toContract.withdrawNative(item.name, recipient, value - feeValue).then(_ => {
+                        logInsert({
+                            depositHash: event.blockHash,
+                            chainFrom: item.name,
+                            chainTo: toChain,
+                            block: blockNow,
+                            toToken: "",
+                            address,
+                            value: _value,
+                            status: 'deposit native success'
+                        })
+                        console.log("[跨链][成功] 链 " + item.name, "到链 " + token, "地址 " + address, "数额 " + _value)
+                    })
+                }
+
+                setBlockLock(item.name, blockNow)
+            }
+        })
+
         contract.on("Deposit", async (chain, token, address, value, event) => {
+            // console.log(item.name,chain,token,address,value,event.blockNumber)
             const decimal = tokens[item.name][token].decimal
 
             const blockLock = await getBlockLock(item.name)
@@ -199,16 +237,28 @@ async function main() {
                     toContract.withdraw(item.name, token, address, final).then(_ => {
                         logInsert({
                             depositHash: event.blockHash,
-                            chainFrom: item.name, chainTo: chain, block: blockNow,
-                            toToken: token, address, value: _value, status: 'deposit success'
+                            chainFrom: item.name,
+                            chainTo: chain,
+                            block: blockNow,
+                            toToken: token,
+                            address,
+                            value: _value,
+                            status: 'deposit success'
                         })
                         console.log("[跨链][成功] 链 " + item.name, "到链 " + chain, "代币 " + token, "地址 " + address, "数额 " + _value)
                     }).catch(error => {
                         logInsert({
-                            chainFrom: item.name, chainTo: chain, block: blockNow, depositHash: event.blockHash,
-                            toToken: token, address, value: _value, status: 'deposit error'
+                            chainFrom: item.name,
+                            chainTo: chain,
+                            block: blockNow,
+                            depositHash: event.blockHash,
+                            toToken: token,
+                            address,
+                            value: _value,
+                            status: 'deposit error'
                         })
                         console.log("[跨链][失败] 链 " + item.name, "到链 " + chain, "代币 " + token, "地址 " + address, "数额 " + _value)
+                        // console.log(error)
                     })
                 }
                 setBlockLock(item.name, blockNow)
