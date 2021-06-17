@@ -16,6 +16,16 @@ use Illuminate\Support\Facades\Route;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
+Route::get('bridges', function () {
+    $bridges = Chain::query()->pluck("bridge", "chainId");
+    return response()->json($bridges);
+});
+
+Route::get('pairs', function () {
+    $all = Pair::all();
+    $pairs = $all->groupBy("fromChain")->all();
+    return response()->json($pairs);
+});
 
 Route::get("items", function (Request $request) {
     $chainId = $request->input("chain");
@@ -27,12 +37,12 @@ Route::get("items", function (Request $request) {
         ]);
     }
     $token = $request->input("token");
-    $items = Pair::query()->where("fromChain", $fromChain->id)->when($token, function (Builder $builder, $fromToken) {
+    $items = Pair::query()->where("fromChain", $fromChain->chainId)->when($token, function (Builder $builder, $fromToken) {
         return $builder->where("fromToken", $fromToken);
     })->orderBy("sort")->get();
     foreach ($items as $item) {
-        $item->fromChainData = Chain::query()->where("id", $item->fromChain)->first();
-        $item->toChainData = Chain::query()->where("id", $item->toChain)->first();
+        $item->fromChainData = Chain::query()->where("chainId", $item->fromChain)->first();
+        $item->toChainData = Chain::query()->where("chainId", $item->toChain)->first();
     }
     $grouped = $items->groupBy('name');
 

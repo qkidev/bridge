@@ -238,7 +238,7 @@ contract Bridge is BridgeAdmin {
     }
 
     // 主网币跨出
-    function depositNative(uint toChainId, uint value) public payable {
+    function depositNative(uint toChainId, uint256 value) public payable {
         Token storage native = natives[toChainId];
         require(native.isRun, "chain is not support");
 

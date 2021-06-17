@@ -13,12 +13,12 @@
                     </van-cell>
 
                     <van-cell-group title="跨链目标">
-                        <van-cell v-for="(item,index) in state.targets" :key="index" :title="item.symbol" clickable
+                        <van-cell v-for="(item,index) in state.targets" :key="index" :title="item.title" clickable
                                   @click="setTarget(item)" center>
                             <template #label>
                                 <div>手续费: {{item.bridgeFee}}%</div>
-                                <div>目标链: {{item.chain}}</div>
-                                <div>{{item.remote}}</div>
+                                <div>目标链: {{item.toChain}}</div>
+                                <div>{{item.toToken}}</div>
                             </template>
                             <van-button size="mini" v-if="state.target === item" type="danger" icon="success">
                             </van-button>
@@ -110,82 +110,37 @@
         const abi = [
             "function balanceOf(address) view returns (uint256)"
         ]
-        const contract = new ethers.Contract(target.local, abi, signer)
+        const contract = new ethers.Contract(target.fromToken, abi, signer)
         const balance = await contract.balanceOf(state.account)
         state.tokenBalance = ethers.utils.formatUnits(balance, target.decimal)
         state.loading.balance = false
     }
 
     const getBridge = (networkId) => {
-        const bridges = {
-            // "20181205": "0xcF70a42585473F160e7F5191dfe97fA15d5D8F3B",
-            // "3": "0xF891Ca04EA0276516A7823Ff787f923934dd56Aa",
-            "3777": "0xfc40D4D82F13D55eA4774B081cb91fF18ad45AdB",
-            "4777": "0xBed6437470c099AcC5d4674558d46C5a8bf1eeb4"
-        }
-        state.bridge = bridges[networkId]
+        fetch('http://127.0.0.1:8000/api/bridges')
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (bridges) {
+                state.bridge = bridges[networkId]
+            });
     }
 
     const getTargets = (chain) => {
-        const targets = {
-            "3777": [
-                {
-                    chain: "4777",
-                    remote: "0xC69Cdd72d03BFb18f287fd5BEe6B82D57F5e6d39",
-                    local: "0x81A7099c33ec3767Af27BcDe23C084ca16A4Dbeb",
-                    symbol: "CMM",
-                    decimal: "0",
-                    min: "10",
-                    tokenFee: 5,
-                    bridgeFee: 2,
-                    isNative: false
-                },
-                {
-                    chain: "4777",
-                    remote: "0xcda14f12e483bbD64aF26A4f283350cb9e2a96A4",
-                    local: "",
-                    symbol: "H3777",
-                    decimal: "18",
-                    min: "1",
-                    tokenFee: 0,
-                    bridgeFee: 0,
-                    isNative: true,
-                    isMain: true
-                },
-            ],
-            "4777": [
-                {
-                    chain: "3777",
-                    remote: "0x81A7099c33ec3767Af27BcDe23C084ca16A4Dbeb",
-                    local: "0xC69Cdd72d03BFb18f287fd5BEe6B82D57F5e6d39",
-                    symbol: "CMM",
-                    decimal: "0",
-                    min: "10",
-                    tokenFee: 5,
-                    bridgeFee: 2
-                },
-                {
-                    chain: "3777",
-                    remote: "",
-                    local: "0xcda14f12e483bbD64aF26A4f283350cb9e2a96A4",
-                    symbol: "H3777",
-                    decimal: "0",
-                    min: "1",
-                    tokenFee: 0,
-                    bridgeFee: 0,
-                    isNative: true,
-                    isMain: false,
-                },
-            ],
-        }
-        state.targets = targets[chain]
-        setTarget(state.targets[0])
+        fetch('http://127.0.0.1:8000/api/pairs')
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (targets) {
+                state.targets = targets[chain]
+                setTarget(state.targets[0])
+            });
     }
 
     const onDeposit = async () => {
 
-        if (state.bridgeNumber < state.target.min) {
-            Toast("最低跨链数额为" + state.target.min)
+        if (state.bridgeNumber < state.target.minValue) {
+            Toast("最低跨链数额为" + state.target.minValue)
             return false
         }
         state.loading.deposit = true
@@ -204,7 +159,7 @@
             const bridge = new ethers.Contract(state.bridge, abi, signer)
             if (state.target.isMain) {
                 try {
-                    const tx = await bridge.depositNative(state.target.chain, final, {
+                    const tx = await bridge.depositNative(state.target.toChain, final, {
                         gasLimit: 60000,
                         gasPrice: ethers.utils.parseUnits('1', 'gwei'),
                         value: final,
@@ -215,8 +170,8 @@
                 }
             } else {
                 try {
-                    console.log(state.target.chain, final)
-                    const tx = await bridge.depositNative(state.target.chain, final)
+                    console.log(state.target.toChain, final)
+                    const tx = await bridge.depositNative(state.target.toChain, final)
                     await tx.wait()
                 } catch (e) {
                     console.log(e)
@@ -224,7 +179,7 @@
             }
 
         } else {
-            const token = new ethers.Contract(state.target.local, [
+            const token = new ethers.Contract(state.target.fromToken, [
                 "function approve(address spender, uint256 amount) external returns (bool)",
                 "function allowance(address,address) view returns (uint256)"
             ], signer)
@@ -246,14 +201,14 @@
             const bridge = new ethers.Contract(state.bridge, abi, signer)
             try {
                 // console.log(state.target.chain, state.target.remote, final.toString())
-                const tx = await bridge.deposit(state.target.chain, state.target.remote, final)
+                const tx = await bridge.deposit(state.target.toChain, state.target.toToken, final)
                 await tx.wait()
             } catch (e) {
                 state.loading.deposit = false
                 const message = e.data.message
                 const arr = message.split(':')
                 const messages = {
-                    "revert token is can not use bridge": `${state.target.symbol} 暂时无法跨链`
+                    "revert token is can not use bridge": `${state.target.title} 暂时无法跨链`
                 }
                 Toast(messages[arr[1].trim()] || '跨链失败')
 
