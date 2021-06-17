@@ -96,7 +96,11 @@
         if (state.target !== target) {
             state.bridgeNumber = ""
             state.target = target
-            await getBalance(target)
+            if (state.target.isMain) {
+                state.tokenBalance = state.networkBalance
+            } else {
+                await getBalance(target)
+            }
         }
     }
 
@@ -114,80 +118,65 @@
 
     const getBridge = (networkId) => {
         const bridges = {
-            "20181205": "0xcF70a42585473F160e7F5191dfe97fA15d5D8F3B",
-            "3": "0xF891Ca04EA0276516A7823Ff787f923934dd56Aa",
-            // "3777": "0x53AF942f88b73f835fB3eE1D48A846Da92029184",
-            // "4777": "0x3736Ad67E30cCD77C6740Ea4a8e549c04cE439F2"
+            // "20181205": "0xcF70a42585473F160e7F5191dfe97fA15d5D8F3B",
+            // "3": "0xF891Ca04EA0276516A7823Ff787f923934dd56Aa",
+            "3777": "0xfc40D4D82F13D55eA4774B081cb91fF18ad45AdB",
+            "4777": "0xBed6437470c099AcC5d4674558d46C5a8bf1eeb4"
         }
         state.bridge = bridges[networkId]
     }
 
     const getTargets = (chain) => {
         const targets = {
-            "20181205": [
+            "3777": [
                 {
-                    chain: "ropsten",
-                    remote: "0xA52191450806181dEe22AAc5fc074C83c057AC43",
-                    local: "0xE06235AAAA893336f1B38e10499Bef7Acb483EF9",
-                    symbol: "cmm",
-                    decimal: 0,
-                    min: 10,
+                    chain: "4777",
+                    remote: "0xC69Cdd72d03BFb18f287fd5BEe6B82D57F5e6d39",
+                    local: "0x81A7099c33ec3767Af27BcDe23C084ca16A4Dbeb",
+                    symbol: "CMM",
+                    decimal: "0",
+                    min: "10",
                     tokenFee: 5,
-                    bridgeFee: 2
+                    bridgeFee: 2,
+                    isNative: false
                 },
                 {
-                    chain: "ropsten",
-                    remote: "0xb6Cb36df5b88A3e5b547b04368Ebef30f04409a9",
-                    local: "0x059d5e8be85b0E517F930e00Ddd52AC1Aaf61115",
-                    symbol: "cnn",
-                    decimal: 0,
-                    min: 10,
-                    tokenFee: 5,
-                    bridgeFee: 2
-                },
-                {
-                    chain: "ropsten",
-                    remote: "0x0B8880087d8A76e03802Cd000e36126665e24363",
-                    local: "0x5Cad8a1340E624Be90adfd787F6F3248DdF17321",
-                    symbol: "PI",
-                    decimal: 6,
-                    min: 10,
+                    chain: "4777",
+                    remote: "0xcda14f12e483bbD64aF26A4f283350cb9e2a96A4",
+                    local: "",
+                    symbol: "H3777",
+                    decimal: "18",
+                    min: "1",
                     tokenFee: 0,
-                    bridgeFee: 2
+                    bridgeFee: 0,
+                    isNative: true,
+                    isMain: true
                 },
             ],
-            "3": [
+            "4777": [
                 {
-                    chain: "qk",
-                    remote: "0xE06235AAAA893336f1B38e10499Bef7Acb483EF9",
-                    local: "0xA52191450806181dEe22AAc5fc074C83c057AC43",
-                    symbol: "cmm",
-                    min: 10,
-                    decimal: 0,
+                    chain: "3777",
+                    remote: "0x81A7099c33ec3767Af27BcDe23C084ca16A4Dbeb",
+                    local: "0xC69Cdd72d03BFb18f287fd5BEe6B82D57F5e6d39",
+                    symbol: "CMM",
+                    decimal: "0",
+                    min: "10",
                     tokenFee: 5,
                     bridgeFee: 2
                 },
                 {
-                    chain: "qk",
-                    remote: "0x059d5e8be85b0E517F930e00Ddd52AC1Aaf61115",
-                    local: "0xb6Cb36df5b88A3e5b547b04368Ebef30f04409a9",
-                    symbol: "cnn",
-                    min: 10,
-                    decimal: 0,
-                    tokenFee: 5,
-                    bridgeFee: 2
-                },
-                {
-                    chain: "qk",
-                    remote: "0x5Cad8a1340E624Be90adfd787F6F3248DdF17321",
-                    local: "0x0B8880087d8A76e03802Cd000e36126665e24363",
-                    symbol: "PI",
-                    decimal: 6,
-                    min: 10,
+                    chain: "3777",
+                    remote: "",
+                    local: "0xcda14f12e483bbD64aF26A4f283350cb9e2a96A4",
+                    symbol: "H3777",
+                    decimal: "0",
+                    min: "1",
                     tokenFee: 0,
-                    bridgeFee: 2
+                    bridgeFee: 0,
+                    isNative: true,
+                    isMain: false,
                 },
-            ]
+            ],
         }
         state.targets = targets[chain]
         setTarget(state.targets[0])
@@ -199,50 +188,79 @@
             Toast("最低跨链数额为" + state.target.min)
             return false
         }
-
         state.loading.deposit = true
-        const token = new ethers.Contract(state.target.local, [
-            "function approve(address spender, uint256 amount) external returns (bool)"
-        ], signer)
-        try {
-            console.log('开始授权')
-            const value = ethers.utils.parseUnits(state.bridgeNumber.toString(), state.target.decimal)
-            const approve = await token.approve(state.bridge, value,{
-                gasLimit:180000,
-                gasPrice:ethers.utils.parseUnits("1","gwei")
-            })
-            console.log('等待打包')
-            await approve.wait()
-        } catch (e) {
-            Toast("授权失败")
-            state.loading.deposit = false
-            return false
-        }
-        const abi = [
-            "function deposit(string memory chain,address remote,uint256 value)"
-        ]
-        const bridge = new ethers.Contract(state.bridge, abi, signer)
-
         let tokenFee = 0
         if (state.target.tokenFee) {
             tokenFee = Math.ceil(state.bridgeNumber * (state.target.tokenFee / 100))
         }
         let final = state.bridgeNumber - tokenFee
-        try {
-            final = ethers.utils.parseUnits(final.toString(), state.target.decimal)
-            console.log(state.target.chain, state.target.remote)
-            const tx = await bridge.deposit(state.target.chain, state.target.remote, final)
-            await tx.wait()
-        } catch (e) {
-            const message = e.data.message
-            const arr = message.split(':')
-            const messages = {
-                "revert token is can not use bridge": `${state.target.symbol} 暂时无法跨链`
+        final = ethers.utils.parseUnits(final.toString(), state.target.decimal)
+
+        console.log(state.target.isNative)
+        if (state.target.isNative) {
+            const abi = [
+                "function depositNative(uint toChainId, uint256 value) payable"
+            ]
+            const bridge = new ethers.Contract(state.bridge, abi, signer)
+            if (state.target.isMain) {
+                try {
+                    const tx = await bridge.depositNative(state.target.chain, final, {
+                        gasLimit: 60000,
+                        gasPrice: ethers.utils.parseUnits('1', 'gwei'),
+                        value: final,
+                    })
+                    await tx.wait()
+                } catch (e) {
+                    console.log(e)
+                }
+            } else {
+                try {
+                    console.log(state.target.chain, final)
+                    const tx = await bridge.depositNative(state.target.chain, final)
+                    await tx.wait()
+                } catch (e) {
+                    console.log(e)
+                }
             }
-            Toast(messages[arr[1].trim()] || '跨链失败')
-            state.loading.deposit = false
-            return false
+
+        } else {
+            const token = new ethers.Contract(state.target.local, [
+                "function approve(address spender, uint256 amount) external returns (bool)",
+                "function allowance(address,address) view returns (uint256)"
+            ], signer)
+            const value = ethers.utils.parseUnits(state.bridgeNumber.toString(), state.target.decimal)
+            const allowance = await token.allowance(state.account, state.bridge)
+            if (allowance.toString() * 1 < value.toString() * 1) {
+                try {
+                    const approve = await token.approve(state.bridge, ethers.utils.parseUnits("10000000000000", state.target.decimal))
+                    await approve.wait()
+                } catch (e) {
+                    state.loading.deposit = false
+                    return false
+                }
+            }
+
+            const abi = [
+                "function deposit(uint chainId,address toToken,uint256 value)",
+            ]
+            const bridge = new ethers.Contract(state.bridge, abi, signer)
+            try {
+                // console.log(state.target.chain, state.target.remote, final.toString())
+                const tx = await bridge.deposit(state.target.chain, state.target.remote, final)
+                await tx.wait()
+            } catch (e) {
+                state.loading.deposit = false
+                const message = e.data.message
+                const arr = message.split(':')
+                const messages = {
+                    "revert token is can not use bridge": `${state.target.symbol} 暂时无法跨链`
+                }
+                Toast(messages[arr[1].trim()] || '跨链失败')
+
+                return false
+            }
         }
+
 
         state.loading.deposit = false
         Toast("跨链完成")

@@ -346,13 +346,6 @@ aes-js@3.0.0:
   resolved "https://registry.npm.taobao.org/aes-js/download/aes-js-3.0.0.tgz#e21df10ad6c2053295bcbb8dab40b09dbea87e4d"
   integrity sha1-4h3xCtbCBTKVvLuNq0Cwnb6ofk0=
 
-axios@^0.21.1:
-  version "0.21.1"
-  resolved "https://registry.nlark.com/axios/download/axios-0.21.1.tgz?cache=0&sync_timestamp=1618847188301&other_urls=https%3A%2F%2Fregistry.nlark.com%2Faxios%2Fdownload%2Faxios-0.21.1.tgz#22563481962f4d6bde9a76d516ef0e5d3c09b2b8"
-  integrity sha1-IlY0gZYvTWvemnbVFu8OXTwJsrg=
-  dependencies:
-    follow-redirects "^1.10.0"
-
 bech32@1.1.4:
   version "1.1.4"
   resolved "https://registry.npm.taobao.org/bech32/download/bech32-1.1.4.tgz#e38c9f37bf179b8eb16ae3a772b40c356d4832e9"
@@ -431,11 +424,6 @@ ethers@^5.3.0:
     "@ethersproject/wallet" "5.3.0"
     "@ethersproject/web" "5.3.0"
     "@ethersproject/wordlists" "5.3.0"
-
-follow-redirects@^1.10.0:
-  version "1.14.1"
-  resolved "https://registry.nlark.com/follow-redirects/download/follow-redirects-1.14.1.tgz?cache=0&sync_timestamp=1620555300559&other_urls=https%3A%2F%2Fregistry.nlark.com%2Ffollow-redirects%2Fdownload%2Ffollow-redirects-1.14.1.tgz#d9114ded0a1cfdd334e164e6662ad02bfd91ff43"
-  integrity sha1-2RFN7Qoc/dM04WTmZirQK/2R/0M=
 
 hash.js@1.1.7, hash.js@^1.0.0, hash.js@^1.0.3:
   version "1.1.7"

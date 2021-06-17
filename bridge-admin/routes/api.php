@@ -17,21 +17,6 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get("chains", function (Request $request) {
-    $data = Chain::all();
-    return response()->json($data);
-});
-
-//Route::get("tokens", function (Request $request) {
-//    $mainId = $request->input("mainId");
-//    if (null == $mainId) {
-//        $data = Token::all();
-//    } else {
-//        $data = Token::query()->where("mainId", $mainId)->get();
-//    }
-//    return response()->json($data);
-//});
-
 Route::get("items", function (Request $request) {
     $chainId = $request->input("chain");
     $fromChain = Chain::query()->where("chainId", $chainId)->first();
