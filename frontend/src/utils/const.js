@@ -136,14 +136,20 @@ export const BRIDGE_ABI = [
 		"inputs": [
 			{
 				"indexed": false,
-				"internalType": "string",
-				"name": "chain",
-				"type": "string"
+				"internalType": "uint256",
+				"name": "toChainId",
+				"type": "uint256"
 			},
 			{
 				"indexed": false,
 				"internalType": "address",
-				"name": "remote",
+				"name": "fromToken",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "toToken",
 				"type": "address"
 			},
 			{
@@ -167,9 +173,15 @@ export const BRIDGE_ABI = [
 		"inputs": [
 			{
 				"indexed": false,
-				"internalType": "string",
-				"name": "chain",
-				"type": "string"
+				"internalType": "uint256",
+				"name": "toChainId",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "bool",
+				"name": "isMain",
+				"type": "bool"
 			},
 			{
 				"indexed": false,
@@ -192,14 +204,20 @@ export const BRIDGE_ABI = [
 		"inputs": [
 			{
 				"indexed": false,
+				"internalType": "uint256",
+				"name": "toChainId",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
 				"internalType": "address",
-				"name": "local",
+				"name": "fromToken",
 				"type": "address"
 			},
 			{
 				"indexed": false,
 				"internalType": "address",
-				"name": "remote",
+				"name": "toToken",
 				"type": "address"
 			},
 			{
@@ -223,9 +241,9 @@ export const BRIDGE_ABI = [
 		"inputs": [
 			{
 				"indexed": false,
-				"internalType": "string",
-				"name": "fromChain",
-				"type": "string"
+				"internalType": "uint256",
+				"name": "fromChainId",
+				"type": "uint256"
 			},
 			{
 				"indexed": false,
@@ -272,13 +290,13 @@ export const BRIDGE_ABI = [
 	{
 		"inputs": [
 			{
-				"internalType": "string",
-				"name": "chain",
-				"type": "string"
+				"internalType": "uint256",
+				"name": "chainId",
+				"type": "uint256"
 			},
 			{
 				"internalType": "address",
-				"name": "remote",
+				"name": "toToken",
 				"type": "address"
 			},
 			{
@@ -295,14 +313,47 @@ export const BRIDGE_ABI = [
 	{
 		"inputs": [
 			{
-				"internalType": "string",
-				"name": "toChain",
-				"type": "string"
+				"internalType": "uint256",
+				"name": "toChainId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "value",
+				"type": "uint256"
 			}
 		],
 		"name": "depositNative",
 		"outputs": [],
 		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "toChainId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "isRun",
+				"type": "bool"
+			},
+			{
+				"internalType": "bool",
+				"name": "isMain",
+				"type": "bool"
+			},
+			{
+				"internalType": "address",
+				"name": "fromToken",
+				"type": "address"
+			}
+		],
+		"name": "nativeInsert",
+		"outputs": [],
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -326,17 +377,27 @@ export const BRIDGE_ABI = [
 	{
 		"inputs": [
 			{
-				"internalType": "string",
+				"internalType": "uint256",
 				"name": "",
-				"type": "string"
+				"type": "uint256"
 			}
 		],
 		"name": "natives",
 		"outputs": [
 			{
 				"internalType": "bool",
-				"name": "",
+				"name": "isRun",
 				"type": "bool"
+			},
+			{
+				"internalType": "bool",
+				"name": "isMain",
+				"type": "bool"
+			},
+			{
+				"internalType": "address",
+				"name": "local",
+				"type": "address"
 			}
 		],
 		"stateMutability": "view",
@@ -384,13 +445,13 @@ export const BRIDGE_ABI = [
 	{
 		"inputs": [
 			{
-				"internalType": "string",
-				"name": "chain",
-				"type": "string"
+				"internalType": "uint256",
+				"name": "chainId",
+				"type": "uint256"
 			},
 			{
 				"internalType": "address",
-				"name": "remote",
+				"name": "toToken",
 				"type": "address"
 			},
 			{
@@ -407,18 +468,18 @@ export const BRIDGE_ABI = [
 	{
 		"inputs": [
 			{
-				"internalType": "string",
-				"name": "chain",
-				"type": "string"
+				"internalType": "uint256",
+				"name": "toChainId",
+				"type": "uint256"
 			},
 			{
 				"internalType": "address",
-				"name": "remote",
+				"name": "toToken",
 				"type": "address"
 			},
 			{
 				"internalType": "address",
-				"name": "local",
+				"name": "fromToken",
 				"type": "address"
 			},
 			{
@@ -441,7 +502,7 @@ export const BRIDGE_ABI = [
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "local",
+				"name": "fromToken",
 				"type": "address"
 			},
 			{
@@ -463,9 +524,9 @@ export const BRIDGE_ABI = [
 	{
 		"inputs": [
 			{
-				"internalType": "string",
+				"internalType": "uint256",
 				"name": "",
-				"type": "string"
+				"type": "uint256"
 			},
 			{
 				"internalType": "address",
@@ -497,13 +558,13 @@ export const BRIDGE_ABI = [
 	{
 		"inputs": [
 			{
-				"internalType": "string",
-				"name": "chain",
-				"type": "string"
+				"internalType": "uint256",
+				"name": "toChainId",
+				"type": "uint256"
 			},
 			{
 				"internalType": "address",
-				"name": "remote",
+				"name": "toToken",
 				"type": "address"
 			},
 			{
@@ -525,9 +586,9 @@ export const BRIDGE_ABI = [
 	{
 		"inputs": [
 			{
-				"internalType": "string",
-				"name": "fromChain",
-				"type": "string"
+				"internalType": "uint256",
+				"name": "fromChainId",
+				"type": "uint256"
 			},
 			{
 				"internalType": "address payable",
@@ -544,6 +605,10 @@ export const BRIDGE_ABI = [
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
+	},
+	{
+		"stateMutability": "payable",
+		"type": "receive"
 	}
 ]
 

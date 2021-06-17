@@ -2,7 +2,6 @@ import { get } from './http'
 
 // 跨链桥获取币种和支持的主网链
 export const networkApi = (params) => {
-  console.log(params)
   if(params.token) {
     return get('items?chain='+params.chainId+'&token='+params.token)
   }

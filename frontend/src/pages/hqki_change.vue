@@ -24,13 +24,12 @@
     </div>
     <div class="alignLeft mt_70"><span class="fStyle28_4570B3">跨链桥</span></div>
     <div class="section flex_h_center_center mt_20">
-      <img src="" alt="">
+      <img src="../assets/bridge/dot.png" alt="" class="dot_icon"/>
       <div class="flex1 flex_v_start_center" v-if="currNetwork != null">
         <div class="flex_h_between_center border" style="width: 100%">
           <span class="fStyle26_5E81BB">从</span>
           <div class="flex1 flex_h_center_start"><img :src="currNetwork.fromChainData.icon" alt="" class="coin_logo_min" />
           <span class="fStyle30_ffffff upper-case">{{currNetwork.fromChainData.name}}</span></div>
-          <!-- <i class="iconfont icon-arrow-down-filling arrow_down"></i> -->
         </div>
         <div class="flex_h_between_center" style="width: 100%" @click="showNetworkModel = true">
           <span class="fStyle26_5E81BB">从</span>
@@ -195,16 +194,29 @@ export default {
   },
   methods: {
     async getTokenBalance() {
-      let tokenAddress = this.token.fromToken
-      let contract = new ethers.Contract(tokenAddress, NORMAL_ABI, this.signer)
-      this.tokenContract = contract
-      let [, decimal] = await this.to(contract.decimals())
-      this.tokenDecimal = decimal
-      let [err, balance] = await this.to(contract.balanceOf(this.address))
-      this.doResponse(err, balance, 'tokenBalance', this.tokenDecimal)
-      console.log( err, balance, decimal, BRIDGE_ABI)
+      if(this.token.fromToken == '') {
+        this.tokenDecimal = this.currNetwork.decimal
+        let [err, balance] = await this.to(this.provider.getBalance(this.address))
+        this.doResponse(err, balance, 'tokenBalance', this.tokenDecimal)
+      } else {
+        let tokenAddress = this.token.fromToken
+        let contract = new ethers.Contract(tokenAddress, NORMAL_ABI, this.signer)
+        this.tokenContract = contract
+        let [, decimal] = await this.to(contract.decimals())
+        this.tokenDecimal = decimal
+        let [err, balance] = await this.to(contract.balanceOf(this.address))
+        this.doResponse(err, balance, 'tokenBalance', this.tokenDecimal)
+      }
     },
-    
+    async getBalance() {
+      if(this.token.fromToken == ''){
+        let [err, balance] = await this.to(this.provider.getBalance(this.address))
+        this.doResponse(err, balance, 'tokenBalance', this.tokenDecimal)
+      } else {
+        let [err, balance] = await this.to(this.tokenContract.balanceOf(this.address))
+        this.doResponse(err, balance, 'tokenBalance', this.tokenDecimal)
+      }
+    },
     async getTokenList () {
       let json = await networkApi({chainId: this.chainId})
       if(json.code === 0) {
@@ -228,10 +240,10 @@ export default {
       if(tokenObj == null){
         return
       }
-      this.token = tokenObj
       this.netWorkList = tokenObj.networks || []
       this.currNetwork = (tokenObj.networks || []).length > 0 ? (tokenObj.networks || [])[0] : null
       this.bridgeAddress = this.currNetwork.fromChainData.bridge
+      this.token = tokenObj
       this.showAssetModel = false
     },
     setChain(chainObj) {
@@ -313,38 +325,22 @@ export default {
       // let bridgeAddress = this.currNetwork.fromChainData.bridge
       let constract = new ethers.Contract(this.bridgeAddress, BRIDGE_ABI, this.signer)
       this.bridgeContract = constract
-      let amount = ethers.utils.parseUnits(
-        this.amount.toString(),
-        this.tokenDecimal
-      );
+      
+      let amount = this.calcAmount();
+      
       this.loadingModel = true
       if(this.currNetwork.isNative == 1) {
-        let [err, res] = await this.to(constract.depositNative(this.currNetwork.toChainData.name, {
-          value: amount,
-          gasPrice: ethers.utils.parseUnits(this.min_gasprice, "gwei"),
-        }))
-        if(this.doResponse(err, res)) {
-        this.queryTransation(this.provider, res.hash, async () => {
-          this.loadingModel = false
-          this.showOrderModel = false
-          let [err, balance] = await this.to(this.tokenContract.balanceOf(this.address))
-          this.doResponse(err, balance, 'tokenBalance', this.tokenDecimal)
-          this.amount = ''
-        });
-      } else {
-        this.loadingModel = false
-      }
+        if(this.currNetwork.isMain == 1) {
+          this.exchangeMain()
+        } else {
+          this.allowanceContract(amount, this.exchangeMain);
+        }
       } else {
         this.allowanceContract(amount, this.exchange);
       }
-      // if(this.coinAddress === this.$root.mainNetwork){
-      //   this.sendRedPacket();
-      // } else {
-      //   this.allowanceContract(amount, this.sendRedPacket);
-      // }
     },
-    async exchange() {
-      let amount
+    calcAmount() {
+      let amount;
       if(Number(this.currNetwork.tokenFee) == 0) {
         amount = ethers.utils.parseUnits(
           this.amount.toString(),
@@ -352,16 +348,35 @@ export default {
         );
       } else {
         let tempAmount =Decimal.mul(Decimal.div(Decimal.sub('100', this.currNetwork.tokenFee), '100'), this.amount).toFixed(this.tokenDecimal)
-        console.log(tempAmount, this.tokenDecimal)
         amount = ethers.utils.parseUnits(
           tempAmount,
           this.tokenDecimal
         );
       }
-      
+      return amount;
+    },
+    async exchangeMain() {
+      let amount = this.calcAmount();
+      let [err, res] = await this.to(this.bridgeContract.depositNative(this.currNetwork.toChain, amount, {
+            value: amount,
+            gasPrice: ethers.utils.parseUnits(this.min_gasprice, "gwei"),
+          }))
+          if(this.doResponse(err, res)) {
+            this.queryTransation(this.provider, res.hash, async () => {
+              this.loadingModel = false
+              this.showOrderModel = false
+              this.getBalance();
+              this.amount = ''
+            }); 
+          } else {
+            this.loadingModel = false
+          }
+    },
+    async exchange() {
+      let amount = this.calcAmount()
       const gasLimit = await this.getEstimateGas(() =>
         this.bridgeContract.estimateGas.deposit(
-          this.currNetwork.toChainData.name, this.currNetwork.toToken, amount,
+          this.currNetwork.toChain, this.currNetwork.toToken, amount,
           {
             gasPrice: ethers.utils.parseUnits(this.min_gasprice, "gwei"),
           }
@@ -371,7 +386,7 @@ export default {
         this.loadingModel = false
         return 0;
       }
-      let [err, res] = await this.to(this.bridgeContract.deposit(this.currNetwork.toChainData.name, this.currNetwork.toToken,  amount, {
+      let [err, res] = await this.to(this.bridgeContract.deposit(this.currNetwork.toChain, this.currNetwork.toToken,  amount, {
         gasLimit,
         gasPrice: ethers.utils.parseUnits(this.min_gasprice, "gwei"),
       }))
@@ -379,8 +394,7 @@ export default {
         this.queryTransation(this.provider, res.hash, async () => {
           this.loadingModel = false
           this.showOrderModel = false
-          let [err, balance] = await this.to(this.tokenContract.balanceOf(this.address))
-          this.doResponse(err, balance, 'tokenBalance', this.tokenDecimal)
+          this.getBalance();
           this.amount = ''
         });
       } else {
@@ -407,6 +421,11 @@ export default {
     background-color: #0C1D3B;
     border-radius: 10px;
     padding: 30px;
+  }
+  .dot_icon{
+    width: 12px;
+    height: 123px;
+    margin-right: 25px;
   }
   .border{
     padding-bottom: 35px;
