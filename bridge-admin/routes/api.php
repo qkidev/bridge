@@ -1,7 +1,7 @@
 <?php
 
 use App\Models\Chain;
-use App\Models\Token;
+use App\Models\Pair;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -16,21 +16,16 @@ use Illuminate\Support\Facades\Route;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
-
-Route::get("chains", function (Request $request) {
-    $data = Chain::all();
-    return response()->json($data);
+Route::get('bridges', function () {
+    $bridges = Chain::query()->pluck("bridge", "chainId");
+    return response()->json($bridges);
 });
 
-//Route::get("tokens", function (Request $request) {
-//    $mainId = $request->input("mainId");
-//    if (null == $mainId) {
-//        $data = Token::all();
-//    } else {
-//        $data = Token::query()->where("mainId", $mainId)->get();
-//    }
-//    return response()->json($data);
-//});
+Route::get('pairs', function () {
+    $all = Pair::all();
+    $pairs = $all->groupBy("fromChain")->all();
+    return response()->json($pairs);
+});
 
 Route::get("items", function (Request $request) {
     $chainId = $request->input("chain");
@@ -42,12 +37,12 @@ Route::get("items", function (Request $request) {
         ]);
     }
     $token = $request->input("token");
-    $items = Token::query()->where("fromChain", $fromChain->id)->when($token, function (Builder $builder, $fromToken) {
+    $items = Pair::query()->where("fromChain", $fromChain->chainId)->when($token, function (Builder $builder, $fromToken) {
         return $builder->where("fromToken", $fromToken);
     })->orderBy("sort")->get();
     foreach ($items as $item) {
-        $item->fromChainData = Chain::query()->where("id", $item->fromChain)->first();
-        $item->toChainData = Chain::query()->where("id", $item->toChain)->first();
+        $item->fromChainData = Chain::query()->where("chainId", $item->fromChain)->first();
+        $item->toChainData = Chain::query()->where("chainId", $item->toChain)->first();
     }
     $grouped = $items->groupBy('name');
 
@@ -56,3 +51,5 @@ Route::get("items", function (Request $request) {
         'data' => $grouped->all()
     ]);
 });
+
+

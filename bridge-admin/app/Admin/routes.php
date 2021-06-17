@@ -14,9 +14,8 @@ Route::group([
 
     $router->get('/', 'HomeController@index');
 
-    $router->resource('bridges', BridgeController::class);
     $router->resource('chains', ChainController::class);
-    $router->resource('tokens', TokenController::class);
+    $router->resource('pairs', PairController::class);
     $router->get('pairs', 'HomeController@pairs');
 
 });

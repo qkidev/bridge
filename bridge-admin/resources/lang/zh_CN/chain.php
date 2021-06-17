@@ -10,7 +10,8 @@ return [
         'name' => '名称',
         'sort' => '排序',
         'title' => '标题',
-        'url' => '主网节点'
+        'url' => '主网节点',
+        'bridge' => '跨链桥地址'
     ],
     'options' => [
     ],

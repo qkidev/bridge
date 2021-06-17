@@ -6,10 +6,10 @@ use Dcat\Admin\Traits\HasDateTimeFormatter;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Token extends Model
+class Pair extends Model
 {
 	use HasDateTimeFormatter;
-    protected $table = 'token';
+    protected $table = 'pair';
     public $timestamps = false;
 
 }
