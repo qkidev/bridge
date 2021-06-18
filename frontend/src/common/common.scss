@@ -1,0 +1,241 @@
+.flex_h_center_start{
+  display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: flex-start;
+}
+.flex_h_center_center{
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+}
+.flex_h_between_center{
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+}
+.flex_h_end_center{
+  display: flex;
+	flex-direction: row;
+  justify-content: flex-end;
+	align-items: center;
+}
+.flex_v{display: flex;flex-direction: column;}
+.flex_v_center_center{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.flex_v_center_start{
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+.flex1{
+	flex: 1;
+}
+.flex2{
+	flex: 2;
+}
+.alignLeft{
+  text-align: left;
+}
+  /*省略号*/
+.ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// 根据实际项目变化
+.padd_53{
+  padding-left: 53px;
+  padding-right: 53px;
+}
+.pt_45{
+  padding-top: 45px;
+}
+.ml_30{
+  margin-left: 30px;
+}
+.ml_15{
+  margin-left: 15px;
+}
+.mt_15{
+  margin-top: 15px;
+}
+.mt_10{
+  margin-top: 10px;
+}
+.mt_20{
+  margin-top: 20px;
+}
+.mt_25{
+  margin-top: 25px;
+}
+.mt_30{
+  margin-top: 30px;
+}
+.mt_45{
+  margin-top: 45px;
+}
+.mt_60{
+  margin-top: 60px;
+}
+.mt_70{
+  margin-top: 70px;
+}
+.mt_100{
+  margin-top: 100px;
+}
+
+
+$fColor_9B9CAA: #9B9CAA;
+$fColor_ffffff: #ffffff;
+$fColor_358EFF: #358EFF;
+$fColor_C8C8C8: #C8C8C8;
+$fColor_7B7B86: #7B7B86;
+$fColor_1F2033: #1F2033;
+
+$fSize_22: 22px;
+$fSize_24: 24px;
+$fSize_28: 28px;
+$fSize_32: 32px;
+$fSize_36: 36px;
+$fSize_54: 54px;
+
+.fStyle_22_ffffff{
+  font-size: $fSize_22;
+  color: $fColor_ffffff;
+}
+.fStyle_22_ffffff_w600{
+  font-size: $fSize_22;
+  color: $fColor_ffffff;
+  font-weight: 600;
+}
+.fStyle_22_C8C8C8_w500{
+  font-size: $fSize_22;
+  color: $fColor_C8C8C8;
+  font-weight: 500;
+}
+.fStyle_22_358EFF_w500{
+  font-size: $fSize_22;
+  color: $fColor_358EFF;
+  font-weight: 500;
+}
+.fStyle_22_7B7B86{
+  font-size: $fSize_22;
+  color: $fColor_7B7B86;
+}
+.fStyle_22_9B9CAA{
+  font-size: $fSize_22;
+  color: $fColor_9B9CAA;
+}
+.fStyle_24_9B9CAA{
+  font-size: $fSize_24;
+  color: $fColor_9B9CAA;
+}
+.fStyle_24_9B9CAA_w500{
+  font-size: $fSize_24;
+  color: $fColor_9B9CAA;
+  font-weight: 500;
+}
+.fStyle24_AFB0B2{
+  font-size: $fSize_24;
+  color: #AFB0B2;
+}
+.fStyle_28_ffffff_w500{
+  font-size: $fSize_28;
+  color: $fColor_ffffff;
+  font-weight: 500;
+}
+.fStyle_28_1F2033{
+  font-size: $fSize_28;
+  color: $fColor_1F2033;
+}
+.fStyle_28_ffffff{
+  font-size: $fSize_28;
+  color: $fColor_ffffff;
+}
+.fStyle_28_9B9CAA_500{
+  font-size: $fSize_28;
+  color: $fColor_9B9CAA;
+  font-weight: 500;
+}
+.fStyle_32_1F2033_w500{
+  font-size: $fSize_32;
+  color: $fColor_1F2033;
+  font-weight: 500;
+}
+.fStyle_32_ffffff_w500{
+  font-size: $fSize_32;
+  color: $fColor_ffffff;
+  font-weight: 500;
+}
+.fStyle_36_9B9CAA_w500{
+  font-size: $fSize_36;
+  color: $fColor_9B9CAA;
+  font-weight: 500;
+}
+.fStyle_36_9B9CAA_w500{
+  font-size: $fSize_54;
+  color: $fColor_9B9CAA;
+  font-weight: 500;
+}
+.fStyle_54_ffffff_w500{
+  font-size: $fSize_54;
+  color: $fColor_ffffff;
+  font-weight: 500;
+}
+
+
+  /*美化滚动条*/
+.scrollbar {
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background-color: transparent;
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    border-radius: 4px;
+    background-color: #ddd;
+  }
+  &::-webkit-scrollbar-button {
+    display: block;
+    width: 1px;
+    height: 1px;
+  }
+  &.auto-hide::-webkit-scrollbar-thumb {
+    border-radius: 4px;
+    background-color: transparent;
+  }
+
+  &.auto-hide {
+    &:hover::-webkit-scrollbar-thumb {
+      background-color: #c3c3c3;
+    }
+    &:hover::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+  }
+}
+
+::placeholder{
+  color: #ffffff;
+  font-size: 54px;
+  font-weight: 500;
+}
+.autoBreak{
+  word-wrap: break-all;
+} 
+.upper-case{
+  text-transform: uppercase;
+}
