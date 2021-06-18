@@ -105,8 +105,8 @@ contract BridgeAdmin {
     // 代币列表[侧链][侧链代币地址] = 代币信息
     mapping(uint => mapping(address => Token)) public tokens;
 
-    // 主网币列表[主网] = 主网代币信息
-    mapping(uint => Token) public natives;
+    // 主网币列表[主网][是主链] = 主网代币信息
+    mapping(uint => mapping(bool=>Token)) public natives;
 
     event adminChanged(address _address);
 
@@ -141,22 +141,33 @@ contract BridgeAdmin {
         } else {
             require(fromToken != address(0), "minor native must have token");
         }
-        natives[toChainId] = Token({
+        natives[toChainId][isMain] = Token({
+        isMain:isMain,
         isRun : isRun,
-        isMain : isMain,
         local : fromToken
         });
     }
 
     // 设置代币状态
-    function setTokenIsRun(uint chainId, address toToken, bool state) public {
+    function setTokenIsRun(uint toChainId, address toToken, bool state) public {
         require(
             msg.sender == admin,
             "No operation permission"
         );
 
-        tokens[chainId][toToken].isRun = state;
+        tokens[toChainId][toToken].isRun = state;
     }
+
+    // 设置主网币状态
+    function setNativeIsRun(uint toChainId, bool isMain, bool state) public {
+        require(
+            msg.sender == admin,
+            "No operation permission"
+        );
+
+        natives[toChainId][isMain].isRun = state;
+    }
+
 
     // 资产转账
     function tokenTransfer(address fromToken, address recipient, uint256 value) public onlyAdmin {
@@ -181,7 +192,7 @@ contract Bridge is BridgeAdmin {
 
     event WithdrawDone(uint toChainId, address fromToken, address toToken, address recipient, uint256 value);
 
-    event WithdrawNativeDone(uint fromChainId, address recipient, uint256 value);
+    event WithdrawNativeDone(uint fromChainId, address recipient, bool isMain, uint256 value);
 
     modifier onlyOwner {
         require(msg.sender == owner, "only owner can call this function");
@@ -238,8 +249,8 @@ contract Bridge is BridgeAdmin {
     }
 
     // 主网币跨出
-    function depositNative(uint toChainId, uint256 value) public payable {
-        Token storage native = natives[toChainId];
+    function depositNative(uint toChainId,bool isMain, uint256 value) public payable {
+        Token storage native = natives[toChainId][isMain];
         require(native.isRun, "chain is not support");
 
         if (native.isMain) {
@@ -251,12 +262,12 @@ contract Bridge is BridgeAdmin {
             IERC20 token = IERC20(native.local);
             token.transferFrom(msg.sender, address(this), value);
         }
-        emit DepositNative(toChainId, native.isMain, msg.sender, value);
+        emit DepositNative(toChainId, isMain, msg.sender, value);
     }
 
     // 主网币跨入
-    function withdrawNative(uint fromChainId, address payable recipient, uint256 value) public onlyOwner {
-        Token storage native = natives[fromChainId];
+    function withdrawNative(uint fromChainId, address payable recipient,bool isMain, uint256 value) public onlyOwner {
+        Token storage native = natives[fromChainId][isMain];
         require(native.isRun, "chain is not support");
         if (native.isMain) {
             // 主链跨入
@@ -267,7 +278,7 @@ contract Bridge is BridgeAdmin {
             IERC20 token = IERC20(native.local);
             token.mint(recipient, value);
         }
-        emit WithdrawNativeDone(fromChainId, recipient, value);
+        emit WithdrawNativeDone(fromChainId, recipient, isMain, value);
     }
 
     receive () external payable {}
