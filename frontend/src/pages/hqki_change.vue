@@ -194,7 +194,7 @@ export default {
   },
   methods: {
     async getTokenBalance() {
-      if(this.token.fromToken == '') {
+      if(this.token.fromToken == ethers.constants.AddressZero) {
         this.tokenDecimal = this.currNetwork.decimal
         let [err, balance] = await this.to(this.provider.getBalance(this.address))
         this.doResponse(err, balance, 'tokenBalance', this.tokenDecimal)
@@ -209,7 +209,7 @@ export default {
       }
     },
     async getBalance() {
-      if(this.token.fromToken == ''){
+      if(this.token.fromToken == ethers.constants.AddressZero){
         let [err, balance] = await this.to(this.provider.getBalance(this.address))
         this.doResponse(err, balance, 'tokenBalance', this.tokenDecimal)
       } else {
@@ -357,7 +357,22 @@ export default {
     },
     async exchangeMain() {
       let amount = this.calcAmount();
-      let [err, res] = await this.to(this.bridgeContract.depositNative(this.currNetwork.toChain, amount, {
+
+      const gasLimit = await this.getEstimateGas(() =>
+        this.bridgeContract.estimateGas.depositNative(
+          this.currNetwork.toChain, this.currNetwork.isMain, amount,
+          {
+            value: amount,
+            gasPrice: ethers.utils.parseUnits(this.min_gasprice, "gwei"),
+          }
+        )
+      );
+      if(gasLimit == 0) {
+        this.loadingModel = false
+        return 0;
+      }
+      let [err, res] = await this.to(this.bridgeContract.depositNative(this.currNetwork.toChain, this.currNetwork.isMain, amount, {
+            gasLimit,
             value: amount,
             gasPrice: ethers.utils.parseUnits(this.min_gasprice, "gwei"),
           }))

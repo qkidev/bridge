@@ -253,6 +253,12 @@ export const BRIDGE_ABI = [
 			},
 			{
 				"indexed": false,
+				"internalType": "bool",
+				"name": "isMain",
+				"type": "bool"
+			},
+			{
+				"indexed": false,
 				"internalType": "uint256",
 				"name": "value",
 				"type": "uint256"
@@ -318,6 +324,11 @@ export const BRIDGE_ABI = [
 				"type": "uint256"
 			},
 			{
+				"internalType": "bool",
+				"name": "isMain",
+				"type": "bool"
+			},
+			{
 				"internalType": "uint256",
 				"name": "value",
 				"type": "uint256"
@@ -380,6 +391,11 @@ export const BRIDGE_ABI = [
 				"internalType": "uint256",
 				"name": "",
 				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
 			}
 		],
 		"name": "natives",
@@ -432,6 +448,29 @@ export const BRIDGE_ABI = [
 	{
 		"inputs": [
 			{
+				"internalType": "uint256",
+				"name": "toChainId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "isMain",
+				"type": "bool"
+			},
+			{
+				"internalType": "bool",
+				"name": "state",
+				"type": "bool"
+			}
+		],
+		"name": "setNativeIsRun",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
 				"internalType": "address payable",
 				"name": "newOwner",
 				"type": "address"
@@ -446,7 +485,7 @@ export const BRIDGE_ABI = [
 		"inputs": [
 			{
 				"internalType": "uint256",
-				"name": "chainId",
+				"name": "toChainId",
 				"type": "uint256"
 			},
 			{
@@ -594,6 +633,11 @@ export const BRIDGE_ABI = [
 				"internalType": "address payable",
 				"name": "recipient",
 				"type": "address"
+			},
+			{
+				"internalType": "bool",
+				"name": "isMain",
+				"type": "bool"
 			},
 			{
 				"internalType": "uint256",
