@@ -96,7 +96,7 @@
         if (state.target !== target) {
             state.bridgeNumber = ""
             state.target = target
-            if (state.target.isMain) {
+            if (state.target.isMain && state.target.isNative) {
                 state.tokenBalance = state.networkBalance
             } else {
                 await getBalance(target)
@@ -151,15 +151,15 @@
         let final = state.bridgeNumber - tokenFee
         final = ethers.utils.parseUnits(final.toString(), state.target.decimal)
 
-        console.log(state.target.isNative)
         if (state.target.isNative) {
             const abi = [
-                "function depositNative(uint toChainId, uint256 value) payable"
+                "function depositNative(uint toChainId, bool isMain, uint256 value) payable"
             ]
             const bridge = new ethers.Contract(state.bridge, abi, signer)
+            console.log(state.target.toChain, !!state.target.isMain, final.toString())
             if (state.target.isMain) {
                 try {
-                    const tx = await bridge.depositNative(state.target.toChain, final, {
+                    const tx = await bridge.depositNative(state.target.toChain, state.target.isMain, final, {
                         gasLimit: 60000,
                         gasPrice: ethers.utils.parseUnits('1', 'gwei'),
                         value: final,
@@ -170,8 +170,21 @@
                 }
             } else {
                 try {
-                    console.log(state.target.toChain, final)
-                    const tx = await bridge.depositNative(state.target.toChain, final)
+                    const token = new ethers.Contract(state.target.fromToken, [
+                        "function approve(address spender, uint256 amount) external returns (bool)",
+                        "function allowance(address,address) view returns (uint256)"
+                    ], signer)
+                    const allowance = await token.allowance(state.account, state.bridge)
+                    if (allowance.toString() * 1 < final) {
+                        try {
+                            const approve = await token.approve(state.bridge, ethers.utils.parseUnits("10000000000000", state.target.decimal))
+                            await approve.wait()
+                        } catch (e) {
+                            state.loading.deposit = false
+                            return false
+                        }
+                    }
+                    const tx = await bridge.depositNative(state.target.toChain, !!state.target.isMain, final)
                     await tx.wait()
                 } catch (e) {
                     console.log(e)

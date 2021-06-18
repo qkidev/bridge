@@ -23,7 +23,6 @@ const getChainLock = (chain) => {
     })
 }
 
-
 const setChainLock = (chainId, number) => {
     return new Promise((resolve, reject) => {
         connection.query('UPDATE setting SET `value` = ? WHERE `name` = ?', [number, `${chainId}_lock_number`], (error, results, fields) => {
@@ -72,7 +71,14 @@ const getPairNative = (fromChainId, toChainId, isMain) => {
     })
 }
 
-const logSave = () => {
+const logSave = (pairId,recipient,value,fromChain,toChain,depositHash,depositTime) => {
+    const data = {pairId,recipient,value,fromChain,toChain,depositHash,depositTime}
+    connection.query('INSERT INTO log SET ?', data, function (error, results, fields) {
+        if (error) throw error;
+    });
+}
+
+const logUpdate = ()=>{
 
 }
 
@@ -81,9 +87,9 @@ const abiBridge = [
     "event Deposit(uint toChainId, address fromToken, address toToken, address recipient, uint256 value)",
     "event DepositNative(uint toChainId, bool isMain, address recipient, uint256 value)",
     "event WithdrawDone(uint toChainId, address fromToken, address toToken, address recipient, uint256 value)",
-    "event WithdrawNativeDone(uint fromChainId, address recipient, uint256 value)",
+    "event WithdrawNativeDone(uint fromChainId, address recipient,bool isMain, uint256 value)",
     "function withdraw(uint toChainId,address toToken,address recipient,uint256 value)",
-    "function withdrawNative(uint fromChainId, address payable recipient, uint256 value)"
+    "function withdrawNative(uint fromChainId, address payable recipient, bool isMain, uint256 value)"
 ]
 
 // 全部链的跨链桥合约
@@ -104,8 +110,8 @@ async function main() {
             toChainId = toChainId.toString()
             const pair = await getPair(item.chainId, toChainId, fromToken, toToken)
             if (pair) {
-                let number = ethers.utils.formatUnits(value, pair['decimal'])
-                console.log("[到账][成功] 链 " + item.name, "代币 " + pair.name, "地址 " + recipient, "数额 " + number)
+                // let number = ethers.utils.formatUnits(value, pair['decimal'])
+                console.log("[到账][成功] 链 " +toChainId, "代币 " + pair.name, "地址 " + recipient, "数额 " + value)
             }
         })
         contract.on("DepositNative", async (toChainId, isMain, recipient, value, event) => {
@@ -122,24 +128,13 @@ async function main() {
                 if (toContract) {
                     const final = value - fee
                     try {
-                        console.log(item.chainId, recipient, final)
-                        await toContract.withdrawNative(item.chainId, recipient, final.toString())
+                        await toContract.withdrawNative(item.chainId, recipient, !isMain, final.toString())
                         const showFinal = ethers.utils.formatUnits(final.toString(), pair['decimal'])
+                        logSave(pair.id,recipient,value,item.chainId,toChainId,event.transactionHash,new Date().getTime())
                         console.log("[主网币][跨链][成功] 链 " + item.chainId, "到链 " + toChainId, "地址 " + recipient, "数额 " + showFinal)
                     } catch (e) {
                         console.log(e)
                     }
-                    // logInsert({
-                    //     depositHash: event.blockHash,
-                    //     chainFrom: item.name,
-                    //     chainTo: toChain,
-                    //     block: numberNow,
-                    //     toToken: "",
-                    //     address: recipient,
-                    //     value: value - fee,
-                    //     status: 'deposit native success'
-                    // })
-                    // console.log("[跨链][成功] 链 " + item.name, "到链 " + toChainId, "地址 " + recipient, "数额 " + final)
                 }
 
                 await setChainLock(item.chainId, numberNow)
@@ -159,32 +154,12 @@ async function main() {
                 const toContract = bridgeContracts[toChainId]
                 if (toContract) {
                     const final = ethers.utils.parseUnits(value.toString(), pair['decimal'])
-                    // console.log(item.chainId, toToken, recipient, final)
                     toContract.withdraw(item.chainId, fromToken, recipient, final).then(_ => {
-                        // logInsert({
-                        //     depositHash: event.blockHash,
-                        //     chainFrom: item.name,
-                        //     chainTo: toChain,
-                        //     block: numberNow,
-                        //     toToken: token,
-                        //     address,
-                        //     value: _value,
-                        //     status: 'deposit success'
-                        // })
-                        console.log("[跨链][成功] 链 " + item.name, "到链 " + toChainId, "代币 " + toToken, "地址 " + recipient, "数额 " + value)
+                        logSave(pair.id,recipient,value,item.chainId,toChainId,event.transactionHash,new Date().getTime())
+                        console.log("[跨链][成功] 链 " + item.chainId, "到链 " + toChainId, "代币 " + toToken, "地址 " + recipient, "数额 " + value)
                     }).catch(error => {
+                        console.log("[跨链][失败] 链 " + item.chainId, "到链 " + toChainId, "代币 " + toToken, "地址 " + recipient, "数额 " + value)
                         // console.log(error)
-                        // logInsert({
-                        //     chainFrom: item.name,
-                        //     chainTo: toChain,
-                        //     block: numberNow,
-                        //     depositHash: event.blockHash,
-                        //     toToken: token,
-                        //     address,
-                        //     value: _value,
-                        //     status: 'deposit error'
-                        // })
-                        console.log("[跨链][失败] 链 " + item.name, "到链 " + toChainId, "代币 " + toToken, "地址 " + recipient, "数额 " + value)
                     })
                 }
                 await setChainLock(item.chainId, numberNow.toString())
