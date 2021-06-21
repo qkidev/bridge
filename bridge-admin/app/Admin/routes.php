@@ -13,9 +13,9 @@ Route::group([
 ], function (Router $router) {
 
     $router->get('/', 'HomeController@index');
+    $router->get('contract', 'HomeController@contract');
 
     $router->resource('chains', ChainController::class);
     $router->resource('pairs', PairController::class);
-    $router->get('pairs', 'HomeController@pairs');
-
+    $router->resource('logs', LogController::class);
 });

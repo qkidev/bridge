@@ -110,7 +110,6 @@ async function main() {
             toChainId = toChainId.toString()
             const pair = await getPair(item.chainId, toChainId, fromToken, toToken)
             if (pair) {
-                // let number = ethers.utils.formatUnits(value, pair['decimal'])
                 console.log("[到账][成功] 链 " +toChainId, "代币 " + pair.name, "地址 " + recipient, "数额 " + value)
             }
         })
@@ -154,13 +153,12 @@ async function main() {
                 const toContract = bridgeContracts[toChainId]
                 if (toContract) {
                     const final = ethers.utils.parseUnits(value.toString(), pair['decimal'])
-                    toContract.withdraw(item.chainId, fromToken, recipient, final).then(_ => {
-                        logSave(pair.id,recipient,value,item.chainId,toChainId,event.transactionHash,new Date().getTime())
-                        console.log("[跨链][成功] 链 " + item.chainId, "到链 " + toChainId, "代币 " + toToken, "地址 " + recipient, "数额 " + value)
-                    }).catch(error => {
-                        console.log("[跨链][失败] 链 " + item.chainId, "到链 " + toChainId, "代币 " + toToken, "地址 " + recipient, "数额 " + value)
-                        // console.log(error)
-                    })
+                    logSave(pair.id,recipient,final,item.chainId,toChainId,event.transactionHash,new Date().getTime())
+                    // toContract.withdraw(item.chainId, fromToken, recipient, final).then(_ => {
+                    //     console.log("[跨链][成功] 链 " + item.chainId, "到链 " + toChainId, "代币 " + toToken, "地址 " + recipient, "数额 " + value)
+                    // }).catch(error => {
+                    //     console.log("[跨链][失败] 链 " + item.chainId, "到链 " + toChainId, "代币 " + toToken, "地址 " + recipient, "数额 " + value)
+                    // })
                 }
                 await setChainLock(item.chainId, numberNow.toString())
             }

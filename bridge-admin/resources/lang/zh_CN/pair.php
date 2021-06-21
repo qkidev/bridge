@@ -1,15 +1,15 @@
 <?php
 return [
     'labels' => [
-        'Token' => '跨链对',
-        'token' => 'Token',
+        'Pair' => '跨链对',
+        'pair' => '跨链对',
     ],
     'fields' => [
         'isMain' => '是主链跨出',
-        'fromChain' => '跨出链',
-        'toChain' => '跨入链',
-        'fromToken' => '跨出Token地址',
-        'toToken' => '跨入Token地址',
+        'fromChain' => '跨出链id',
+        'toChain' => '跨入链id',
+        'fromToken' => '跨出Token地址(跨出链)',
+        'toToken' => '跨入Token地址(跨入链)',
         'name' => 'Token名称',
         'title' => 'Token标题',
         'tokenFee' => '转账费(%)',
