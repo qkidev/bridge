@@ -18,7 +18,8 @@ return [
         'icon' => '图标',
         'decimal' => 'Token精度',
         'sort' => '排序',
-        'isNative' => '是否主网币'
+        'isNative' => '是否主网币',
+        'limit'=>'审核数额下限'
     ],
     'options' => [
     ],

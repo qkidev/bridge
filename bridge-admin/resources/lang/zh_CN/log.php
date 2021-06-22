@@ -1,8 +1,8 @@
 <?php
 return [
     'labels' => [
-        'Log' => 'Log',
-        'log' => 'Log',
+        'Log' => '跨链记录',
+        'log' => '跨链记录',
     ],
     'fields' => [
         'depositHash' => '跨出交易hash',

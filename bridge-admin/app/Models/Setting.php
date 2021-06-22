@@ -2,10 +2,14 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Dcat\Admin\Traits\HasDateTimeFormatter;
+
 use Illuminate\Database\Eloquent\Model;
 
 class Setting extends Model
 {
-    use HasFactory;
+    public $timestamps = false;
+	use HasDateTimeFormatter;
+    protected $table = 'setting';
+
 }

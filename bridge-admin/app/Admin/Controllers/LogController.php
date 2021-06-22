@@ -12,6 +12,7 @@ use Dcat\Admin\Form;
 use Dcat\Admin\Grid;
 use Dcat\Admin\Show;
 use Dcat\Admin\Http\Controllers\AdminController;
+use Illuminate\Http\Request;
 
 class LogController extends AdminController
 {
@@ -39,7 +40,7 @@ class LogController extends AdminController
             $grid->column('value');
             $grid->column('withdrawTime')->display(function () {
                 if ($this->withdrawTime) {
-                    return date("Y-m-d H:i:s", $this->withdrawTime / 1000);
+                    return date("Y-m-d H:i:s", $this->withdrawTime);
                 }
             });
             $grid->filter(function (Grid\Filter $filter) {
@@ -94,5 +95,15 @@ class LogController extends AdminController
             $form->text('withdrawHash');
             $form->text('withdrawTime');
         });
+    }
+
+    public function withdraw(Request $request)
+    {
+        $id = $request->input('logId');
+        $hash = $request->input('hash');
+        $microtime = time();
+        \App\Models\Log::query()->where("id", $id)
+            ->update(['withdrawTime' => $microtime, 'withdrawHash' => $hash]);
+        return response()->json(['code'=>0,'msg'=>'success']);
     }
 }

@@ -13,9 +13,11 @@ Route::group([
 ], function (Router $router) {
 
     $router->get('/', 'HomeController@index');
-    $router->get('contract', 'HomeController@contract');
+    $router->get('/withdraw', 'LogController@withdraw');
+
 
     $router->resource('chains', ChainController::class);
     $router->resource('pairs', PairController::class);
     $router->resource('logs', LogController::class);
+    $router->resource('settings', SettingController::class);
 });

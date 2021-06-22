@@ -53,6 +53,7 @@ namespace Dcat\Admin {
      * @property Grid\Column|Collection pairId
      * @property Grid\Column|Collection recipient
      * @property Grid\Column|Collection toChain
+     * @property Grid\Column|Collection withdrawDoneTime
      * @property Grid\Column|Collection withdrawHash
      * @property Grid\Column|Collection withdrawTime
      * @property Grid\Column|Collection bridgeFee
@@ -109,6 +110,7 @@ namespace Dcat\Admin {
      * @method Grid\Column|Collection pairId(string $label = null)
      * @method Grid\Column|Collection recipient(string $label = null)
      * @method Grid\Column|Collection toChain(string $label = null)
+     * @method Grid\Column|Collection withdrawDoneTime(string $label = null)
      * @method Grid\Column|Collection withdrawHash(string $label = null)
      * @method Grid\Column|Collection withdrawTime(string $label = null)
      * @method Grid\Column|Collection bridgeFee(string $label = null)
@@ -170,6 +172,7 @@ namespace Dcat\Admin {
      * @property Show\Field|Collection pairId
      * @property Show\Field|Collection recipient
      * @property Show\Field|Collection toChain
+     * @property Show\Field|Collection withdrawDoneTime
      * @property Show\Field|Collection withdrawHash
      * @property Show\Field|Collection withdrawTime
      * @property Show\Field|Collection bridgeFee
@@ -226,6 +229,7 @@ namespace Dcat\Admin {
      * @method Show\Field|Collection pairId(string $label = null)
      * @method Show\Field|Collection recipient(string $label = null)
      * @method Show\Field|Collection toChain(string $label = null)
+     * @method Show\Field|Collection withdrawDoneTime(string $label = null)
      * @method Show\Field|Collection withdrawHash(string $label = null)
      * @method Show\Field|Collection withdrawTime(string $label = null)
      * @method Show\Field|Collection bridgeFee(string $label = null)

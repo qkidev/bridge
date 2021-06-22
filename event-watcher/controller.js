@@ -11,6 +11,20 @@ const connection = mysql.createConnection({
 
 connection.connect()
 
+// 取系统配置跨链审核的值
+const getIsCheck = () => {
+    return new Promise((resolve, reject) => {
+        connection.query('SELECT * FROM `setting` WHERE `name` = ?', [`withdraw-check`], (err, res, fields) => {
+            if (err) {
+                return reject(err)
+            } else {
+                return resolve(res[0].value)
+            }
+        })
+    })
+}
+
+// 取链当前锁值
 const getChainLock = (chain) => {
     return new Promise((resolve, reject) => {
         connection.query('SELECT * FROM `setting` WHERE `name` = ?', [`${chain}_lock_number`], (err, res, fields) => {
@@ -71,14 +85,21 @@ const getPairNative = (fromChainId, toChainId, isMain) => {
     })
 }
 
-const logSave = (pairId,recipient,value,fromChain,toChain,depositHash,depositTime) => {
-    const data = {pairId,recipient,value,fromChain,toChain,depositHash,depositTime}
+const logSave = (pairId, recipient, value, fromChain, toChain, depositHash) => {
+    let depositTime = (new Date()).getTime()
+    depositTime= (depositTime/1000).toFixed()
+    const data = {pairId, recipient, value, fromChain, toChain, depositHash, depositTime}
     connection.query('INSERT INTO log SET ?', data, function (error, results, fields) {
         if (error) throw error;
     });
 }
 
-const logUpdate = ()=>{
+const withdrawDone = (hash, pairId, recipient, value) => {
+    let time = (new Date()).getTime()
+    time= (time/1000).toFixed()
+    connection.query('UPDATE log SET withdrawHash = ?, withdrawTime = ? WHERE pairId = ? AND recipient= ? AND value = ?', [hash, time, pairId, recipient, value], function (error, results, fields) {
+        if (error) throw error;
+    });
 
 }
 
@@ -89,7 +110,7 @@ const abiBridge = [
     "event WithdrawDone(uint toChainId, address fromToken, address toToken, address recipient, uint256 value)",
     "event WithdrawNativeDone(uint fromChainId, address recipient,bool isMain, uint256 value)",
     "function withdraw(uint toChainId,address toToken,address recipient,uint256 value)",
-    "function withdrawNative(uint fromChainId, address payable recipient, bool isMain, uint256 value)"
+    "function withdrawNative(uint toChainId, address payable recipient, bool isMain, uint256 value)"
 ]
 
 // 全部链的跨链桥合约
@@ -104,68 +125,87 @@ async function main() {
         const wallet = new ethers.Wallet(process.env['PK_' + item.name], provider)
         bridgeContracts[item.chainId] = new ethers.Contract(item.bridge, abiBridge, wallet)
     })
+
     chains.forEach(item => {
         const contract = bridgeContracts[item.chainId]
+
+        // 主网币跨入成功
+        contract.on("WithdrawNativeDone", async (toChainId, recipient, isMain, value, event) => {
+            toChainId = toChainId.toString()
+            const pair = await getPairNative(item.chainId, toChainId, isMain)
+            if (pair) {
+                withdrawDone(event.transactionHash, pair.id, recipient, value)
+                console.log(`[主网币][到账][成功] ${value} 个  ${pair.name} 从  ${item.chainId} 到 ${toChainId}`)
+            } else {
+                console.log(`跨链对不存在: fromChainId=${item.chainId}&toChainId=${toChainId}&isMain=${isMain}`)
+            }
+        })
+
+        // 代币跨入成功
         contract.on("WithdrawDone", async (toChainId, fromToken, toToken, recipient, value, event) => {
             toChainId = toChainId.toString()
             const pair = await getPair(item.chainId, toChainId, fromToken, toToken)
             if (pair) {
-                console.log("[到账][成功] 链 " +toChainId, "代币 " + pair.name, "地址 " + recipient, "数额 " + value)
+                console.log("[到账][成功] 链 " + toChainId, "代币 " + pair.name, "地址 " + recipient, "数额 " + value)
+                withdrawDone(event.transactionHash, pair.id, recipient, value)
             }
         })
+
+        // 主网币跨出
         contract.on("DepositNative", async (toChainId, isMain, recipient, value, event) => {
             toChainId = toChainId.toString()
             isMain = isMain ? 1 : 0
             value = value.toString() * 1
-            // console.log(toChainId, isMain, recipient, value.toString())
             const lock = await getChainLock(item.chainId)
             const numberNow = event.blockNumber
+
+            // 检查链高度
             if (numberNow > lock) {
                 const pair = await getPairNative(item.chainId, toChainId, isMain)
-                const fee = Math.ceil(value * pair['bridgeFee'] / 100)
-                const toContract = bridgeContracts[toChainId]
-                if (toContract) {
-                    const final = value - fee
-                    try {
-                        await toContract.withdrawNative(item.chainId, recipient, !isMain, final.toString())
-                        const showFinal = ethers.utils.formatUnits(final.toString(), pair['decimal'])
-                        logSave(pair.id,recipient,value,item.chainId,toChainId,event.transactionHash,new Date().getTime())
-                        console.log("[主网币][跨链][成功] 链 " + item.chainId, "到链 " + toChainId, "地址 " + recipient, "数额 " + showFinal)
-                    } catch (e) {
-                        console.log(e)
+                logSave(pair.id, recipient, value, item.chainId, toChainId, event.transactionHash)
+                console.log(`[主网币][跨链][成功] ${value} 个 ${pair.name} 从 ${pair.fromChain} 到 ${pair.toChain}`)
+                await setChainLock(item.chainId, numberNow)
+                const isCheck = await getIsCheck()
+                // 检查配置的审核状态
+                if (!isCheck || (isCheck && value <= pair['limit'])) {
+                    const toContract = bridgeContracts[toChainId]
+                    if (toContract) {
+                        const fee = Math.ceil(value * pair['bridgeFee'] / 100)
+                        const final = ethers.utils.parseUnits((value - fee).toString(),pair['decimal'])
+                        try {
+                            await toContract['withdrawNative'](item.chainId, recipient, !isMain, final)
+                        } catch (e) {
+                            console.log(e)
+                        }
                     }
                 }
-
-                await setChainLock(item.chainId, numberNow)
             }
         })
 
+        // 执行代币跨出操作
         contract.on("Deposit", async (toChainId, fromToken, toToken, recipient, value, event) => {
             toChainId = toChainId.toString()
-            // console.log(toChainId, fromToken, toToken, recipient, value)
             const lock = await getChainLock(item.chainId)
             const numberNow = event.blockNumber
+
+            // 检查区块高度
             if (numberNow > lock) {
                 const pair = await getPair(item.chainId, toChainId, fromToken, toToken)
-                value = ethers.utils.formatUnits(value, pair['decimal'] * 1)
-                let fee = Math.ceil(value * pair['bridgeFee'] / 100)
-                value -= fee
-                const toContract = bridgeContracts[toChainId]
-                if (toContract) {
-                    const final = ethers.utils.parseUnits(value.toString(), pair['decimal'])
-                    logSave(pair.id,recipient,final,item.chainId,toChainId,event.transactionHash,new Date().getTime())
-                    // toContract.withdraw(item.chainId, fromToken, recipient, final).then(_ => {
-                    //     console.log("[跨链][成功] 链 " + item.chainId, "到链 " + toChainId, "代币 " + toToken, "地址 " + recipient, "数额 " + value)
-                    // }).catch(error => {
-                    //     console.log("[跨链][失败] 链 " + item.chainId, "到链 " + toChainId, "代币 " + toToken, "地址 " + recipient, "数额 " + value)
-                    // })
-                }
+                logSave(pair.id, recipient, value, item.chainId, toChainId, event.transactionHash)
                 await setChainLock(item.chainId, numberNow.toString())
+                const isCheck = await getIsCheck()
+                // 检查配置的审核状态
+                if (!isCheck || (isCheck && value <= pair['limit'])) {
+                    const toContract = bridgeContracts[toChainId]
+                    if (toContract) {
+                        const fee = Math.ceil(value * pair['bridgeFee'] / 100)
+                        const final =  ethers.utils.parseUnits((value - fee).toString(),pair['decimal'])
+                        toContract['withdraw'](item.chainId, fromToken, recipient, final)
+                    }
+                }
             }
         })
     })
 }
 
-main().then(_ => {
-
-})
+main().then()

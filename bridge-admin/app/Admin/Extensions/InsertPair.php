@@ -6,7 +6,7 @@ use App\Models\Chain;
 use App\Models\Pair;
 use Dcat\Admin\Grid\RowAction;
 
-class CheckRow extends RowAction
+class InsertPair extends RowAction
 {
 
     /**
@@ -16,7 +16,7 @@ class CheckRow extends RowAction
      */
     public function title()
     {
-        return '审核';
+        return '添加跨链对(智能合约)';
     }
 
 
@@ -33,25 +33,25 @@ class CheckRow extends RowAction
             '3' => env("PK_3")
         ]);
 
-        $pairs = json_encode(
-            Pair::all()->groupBy('id')->toArray()
-        );
-
         $chains = json_encode(
             Chain::all()->groupBy('chainId')->toArray()
         );
 
         return <<<JS
-$('.grid-check-row').on('click',   function() {
+$('.grid-insert-pair').on('click',   function() {
 
-    const logId = $(this).data('id')
-    const pairId = $(this).data('pair-id')
-    const recipient = $(this).data('recipient')
-    const hash = $(this).data('hash')
-    const value = $(this).data('value')
+    Dcat.loading()
+
     let pks = $pks
-    let pairs = $pairs
     let chains = $chains
+
+    const fromChainId = $(this).data("from-chain")
+    const toChainId = $(this).data("to-chain")
+    const fromToken = $(this).data("from-token")
+    const toToken = $(this).data("to-token")
+    const isMain = $(this).data("is-main")
+    const isNative = $(this).data("is-native")
+
     const abi = [
 	{
 		"inputs": [
@@ -582,53 +582,56 @@ $('.grid-check-row').on('click',   function() {
 		"type": "function"
 	}
 ]
-
-    if (hash){
-        Dcat.error("已经跨链到账!")
-        return false
-    }
-
     try {
-        Dcat.loading()
-
-        const pair = pairs[pairId][0]
-        const chain = chains[pair['toChain']][0]
-
-        const provider = new ethers.providers.JsonRpcProvider(chain.url)
-        const wallet = new ethers.Wallet(pks[pair['toChain']], provider)
-        const bridge = new ethers.Contract(chain['bridge'], abi, wallet)
-
-        const fee = Math.ceil(value * pair['bridgeFee'] / 100)
-        const final = ethers.utils.parseUnits((value-fee).toString(), pair['decimal'])
-
-        if (pair.isNative){
-            // 主网币
-            bridge['withdrawNative'](pair['fromChain'],recipient,!pair['isMain'],final).then(tx=>{
-                tx.wait().then(res=>{
-                    fetch("/admin/withdraw?logId="+logId+"&hash="+res.transactionHash).then()
+      const fromChain = chains[fromChainId][0]
+        const fromProvider = new ethers.providers.JsonRpcProvider(fromChain.url)
+        const fromWallet = new ethers.Wallet(pks[fromChainId], fromProvider)
+        const fromBridge = new ethers.Contract(fromChain['bridge'], abi, fromWallet)
+        if (isNative){
+            fromBridge['natives'](toChainId,isMain).then(data=>{
+                if (data.isRun){
                     Dcat.loading(false)
-                    Dcat.success("审核成功等待操作打包")
-                    Dcat.reload()
-                })
-            }).catch(e=>{
-                Dcat.loading(false)
-                console.log(e.message)
-                Dcat.error(e.message)
+                    Dcat.confirm('跨链对在' + fromChain.name + '链已经存在了 要覆盖吗', null,  ()=> {
+                        fromBridge['nativeInsert'](toChainId,true,isMain,fromToken).then(tx=>{
+                             Dcat.success('跨链对在' + fromChain.name + '链部署完成')
+                        })
+                    })
+                }else{
+                    fromBridge['nativeInsert'](toChainId,true,isMain,fromToken).then(tx=>{
+                         Dcat.success('跨链对在' + fromChain.name + '链部署完成')
+                         Dcat.loading(false)
+                    })
+                }
             })
-        }else{
-            // 是代币
-           bridge['withdraw'](pair['fromChain'],pair['fromToken'],recipient,final).then(tx=>{
-                tx.wait().then(res=>{
-                    fetch("/admin/withdraw?logId="+logId+"&hash="+res.transactionHash).then()
-                    Dcat.loading(false)
-                    Dcat.success("审核成功跨链已到账")
-                    Dcat.reload()
-                })
-           })
+        }else {
+             fromBridge['tokens'](toChainId,toToken).then(data=>{
+                 if (data.local !== "0x0000000000000000000000000000000000000000"){
+                     Dcat.loading(false)
+                     Dcat.confirm('跨链对在' + fromChain.name + '链已经存在了 要覆盖吗', null,  ()=> {
+                        fromBridge['tokenInsert'](toChainId,toToken,fromToken,true,isMain).then(tx=>{
+                            tx.wait().then(res=>{
+                                if (res.confirmations){
+                                    Dcat.success('跨链对在' + fromChain.name + '链部署完成')
+                                }
+                            })
+                        })
+                    });
+                 }else{
+                        fromBridge['tokenInsert'](toChainId,toToken,fromToken,true,isMain).then(tx=>{
+                            tx.wait().then(res=>{
+                                if (res.confirmations){
+                                    Dcat.success('跨链对在' + fromChain.name + '链部署完成')
+                                    Dcat.loading(false)
+                                }
+                            })
+                        })
+                 }
+            })
         }
     }catch (e) {
-        Dcat.loading(false)
         Dcat.error(e.message)
+        Dcat.loading(false)
+        Dcat.reload()
     }
 
 });
@@ -643,11 +646,13 @@ JS;
         // 这里需要添加一个class, 和上面script方法对应
         $this->setHtmlAttribute([
             'data-id' => $id,
-            'data-pair-id' => $this->row->pairId,
-            'data-hash' => $this->row->withdrawHash,
-            'data-recipient' => $this->row->recipient,
-            'data-value' => $this->row->value,
-            'class' => 'grid-check-row'
+            'data-from-chain' => $this->row->fromChain,
+            'data-to-chain' => $this->row->toChain,
+            'data-from-token' => $this->row->fromToken,
+            'data-to-token' => $this->row->toToken,
+            'data-is-main' => $this->row->isMain,
+            'data-is-native' => $this->row->isNative,
+            'class' => 'grid-insert-pair'
         ]);
 
         return parent::html();

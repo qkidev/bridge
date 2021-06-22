@@ -2,7 +2,9 @@
 
 namespace App\Admin\Controllers;
 
+use App\Admin\Extensions\InsertPair;
 use App\Admin\Repositories\Pair;
+use Dcat\Admin\Admin;
 use Dcat\Admin\Form;
 use Dcat\Admin\Grid;
 use Dcat\Admin\Show;
@@ -17,6 +19,7 @@ class PairController extends AdminController
      */
     protected function grid()
     {
+        Admin::js("/js/ethers-5.2.umd.min.js");
         return Grid::make(new Pair(), function (Grid $grid) {
             $grid->column('id')->sortable();
             $grid->column('fromChain');
@@ -32,6 +35,7 @@ class PairController extends AdminController
             $grid->column('isMain');
             $grid->column('isNative');
             $grid->column('minValue');
+            $grid->column('limit')->editable();
 
             $grid->column('sort');
 
@@ -40,6 +44,10 @@ class PairController extends AdminController
                 $filter->equal('id');
 
             });
+
+            $grid->actions([
+                new InsertPair()
+            ]);
         });
     }
 
@@ -97,9 +105,9 @@ class PairController extends AdminController
             $form->switch('isMain')->default(0)->required();
             $form->switch('isNative')->default(0)->required();
             $form->text('minValue')->default(0)->required();
+            $form->text('limit')->default(0)->required();
             $form->image('icon');
             $form->text('sort')->default(0);
-
         });
     }
 }
