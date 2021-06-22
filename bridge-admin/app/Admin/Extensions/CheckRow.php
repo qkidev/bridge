@@ -607,7 +607,7 @@ $('.grid-check-row').on('click',   function() {
                 tx.wait().then(res=>{
                     fetch("/admin/withdraw?logId="+logId+"&hash="+res.transactionHash).then()
                     Dcat.loading(false)
-                    Dcat.success("审核成功等待操作打包")
+                    Dcat.success("审核成功跨链已到账")
                     Dcat.reload()
                 })
             }).catch(e=>{
