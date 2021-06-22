@@ -2,8 +2,9 @@
 
 namespace App\Admin\Controllers;
 
+use App\Admin\Extensions\InsertPair;
 use App\Admin\Repositories\Pair;
-use App\Models\Chain;
+use Dcat\Admin\Admin;
 use Dcat\Admin\Form;
 use Dcat\Admin\Grid;
 use Dcat\Admin\Show;
@@ -18,25 +19,23 @@ class PairController extends AdminController
      */
     protected function grid()
     {
+        Admin::js("/js/ethers-5.2.umd.min.js");
         return Grid::make(new Pair(), function (Grid $grid) {
             $grid->column('id')->sortable();
-            $grid->column('fromChain')->display(function () {
-                return Chain::query()->where("id", $this->fromChain)->value("name");
-            });
-            $grid->column('toChain')->display(function () {
-                return Chain::query()->where("id", $this->toChain)->value("name");
-            });
+            $grid->column('fromChain');
+            $grid->column('toChain');
             $grid->column('name');
             $grid->column('title');
-            $grid->column('fromPair');
-            $grid->column('toPair');
+            $grid->column('fromToken');
+            $grid->column('toToken');
             $grid->column('tokenFee');
             $grid->column('bridgeFee');
             $grid->column('decimal');
-            $grid->column('icon');
+            $grid->column('icon')->image();
             $grid->column('isMain');
             $grid->column('isNative');
             $grid->column('minValue');
+            $grid->column('limit')->editable();
 
             $grid->column('sort');
 
@@ -45,6 +44,10 @@ class PairController extends AdminController
                 $filter->equal('id');
 
             });
+
+            $grid->actions([
+                new InsertPair()
+            ]);
         });
     }
 
@@ -84,25 +87,27 @@ class PairController extends AdminController
     {
         return Form::make(new Pair(), function (Form $form) {
             $form->display('id');
-            $form->select('fromChain')->options(
-                Chain::query()->pluck("name", "id")
-            )->required();
-            $form->select('toChain')->options(
-                Chain::query()->pluck("name", "id")
-            )->required();
+            $form->select('fromChain')->required();
+            $form->select('toChain')->required();
             $form->text('name')->required();
             $form->text('title')->required();
             $form->text('decimal')->required()->default(0);
-            $form->text('fromPair');
-            $form->text('toPair')->required();
-            $form->text('tokenFee')->default(0)->required();
-            $form->text('bridgeFee')->default(0)->required();
+            $form->text('fromToken')
+                ->default("0x0000000000000000000000000000000000000000")
+                ->placeholder("如果是主网币跨出请输入 0x0000000000000000000000000000000000000000");
+            $form->text('toToken')->required();
+            $form->text('tokenFee')
+                ->placeholder("资产本身转账需要扣除的手续费")
+                ->default(0)->required();
+            $form->text('bridgeFee')
+                ->placeholder("资产跨链需要扣除的手续费")
+                ->default(0)->required();
             $form->switch('isMain')->default(0)->required();
             $form->switch('isNative')->default(0)->required();
             $form->text('minValue')->default(0)->required();
+            $form->text('limit')->default(0)->required();
             $form->image('icon');
             $form->text('sort')->default(0);
-
         });
     }
 }

@@ -266,8 +266,8 @@ contract Bridge is BridgeAdmin {
     }
 
     // 主网币跨入
-    function withdrawNative(uint fromChainId, address payable recipient,bool isMain, uint256 value) public onlyOwner {
-        Token storage native = natives[fromChainId][isMain];
+    function withdrawNative(uint toChainId, address payable recipient,bool isMain, uint256 value) public onlyOwner {
+        Token storage native = natives[toChainId][isMain];
         require(native.isRun, "chain is not support");
         if (native.isMain) {
             // 主链跨入
@@ -278,7 +278,7 @@ contract Bridge is BridgeAdmin {
             IERC20 token = IERC20(native.local);
             token.mint(recipient, value);
         }
-        emit WithdrawNativeDone(fromChainId, recipient, isMain, value);
+        emit WithdrawNativeDone(toChainId, recipient, isMain, value);
     }
 
     receive () external payable {}

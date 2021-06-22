@@ -6,10 +6,10 @@ use Dcat\Admin\Traits\HasDateTimeFormatter;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Setting extends Model
+class Log extends Model
 {
-    public $timestamps = false;
 	use HasDateTimeFormatter;
-    protected $table = 'setting';
+    protected $table = 'log';
+    public $timestamps = false;
 
 }

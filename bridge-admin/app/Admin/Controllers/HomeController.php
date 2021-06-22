@@ -4,14 +4,10 @@ namespace App\Admin\Controllers;
 
 use App\Admin\Metrics\Examples;
 use App\Http\Controllers\Controller;
-use App\Models\Bridge;
-use App\Models\Chain;
-use App\Models\Token;
 use Dcat\Admin\Http\Controllers\Dashboard;
 use Dcat\Admin\Layout\Column;
 use Dcat\Admin\Layout\Content;
 use Dcat\Admin\Layout\Row;
-use Dcat\Admin\Widgets\Lazy;
 
 class HomeController extends Controller
 {
@@ -38,13 +34,9 @@ class HomeController extends Controller
             });
     }
 
-    public function pairs(Content $content)
+
+    public function contract(Content $content)
     {
-        $chains = Chain::all()->toArray();
-        $bridges = Bridge::all()->toArray();
-        $tokens = Token::all()->toArray();
-        return $content->body(view('admin.pairs', [
-            "chains" => $chains, "bridges" => $bridges, "tokens" => $tokens
-        ]));
+        return view('admin.contract');
     }
 }
