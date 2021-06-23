@@ -36,8 +36,11 @@ namespace Dcat\Admin {
      * @property Grid\Column|Collection password
      * @property Grid\Column|Collection remember_token
      * @property Grid\Column|Collection username
-     * @property Grid\Column|Collection bridge
+     * @property Grid\Column|Collection balance
      * @property Grid\Column|Collection chainId
+     * @property Grid\Column|Collection token
+     * @property Grid\Column|Collection tokenName
+     * @property Grid\Column|Collection bridge
      * @property Grid\Column|Collection sort
      * @property Grid\Column|Collection status
      * @property Grid\Column|Collection url
@@ -53,7 +56,6 @@ namespace Dcat\Admin {
      * @property Grid\Column|Collection pairId
      * @property Grid\Column|Collection recipient
      * @property Grid\Column|Collection toChain
-     * @property Grid\Column|Collection withdrawDoneTime
      * @property Grid\Column|Collection withdrawHash
      * @property Grid\Column|Collection withdrawTime
      * @property Grid\Column|Collection bridgeFee
@@ -61,11 +63,11 @@ namespace Dcat\Admin {
      * @property Grid\Column|Collection fromToken
      * @property Grid\Column|Collection isMain
      * @property Grid\Column|Collection isNative
+     * @property Grid\Column|Collection limit
      * @property Grid\Column|Collection minValue
      * @property Grid\Column|Collection tokenFee
      * @property Grid\Column|Collection toToken
      * @property Grid\Column|Collection email
-     * @property Grid\Column|Collection token
      * @property Grid\Column|Collection email_verified_at
      *
      * @method Grid\Column|Collection created_at(string $label = null)
@@ -93,8 +95,11 @@ namespace Dcat\Admin {
      * @method Grid\Column|Collection password(string $label = null)
      * @method Grid\Column|Collection remember_token(string $label = null)
      * @method Grid\Column|Collection username(string $label = null)
-     * @method Grid\Column|Collection bridge(string $label = null)
+     * @method Grid\Column|Collection balance(string $label = null)
      * @method Grid\Column|Collection chainId(string $label = null)
+     * @method Grid\Column|Collection token(string $label = null)
+     * @method Grid\Column|Collection tokenName(string $label = null)
+     * @method Grid\Column|Collection bridge(string $label = null)
      * @method Grid\Column|Collection sort(string $label = null)
      * @method Grid\Column|Collection status(string $label = null)
      * @method Grid\Column|Collection url(string $label = null)
@@ -110,7 +115,6 @@ namespace Dcat\Admin {
      * @method Grid\Column|Collection pairId(string $label = null)
      * @method Grid\Column|Collection recipient(string $label = null)
      * @method Grid\Column|Collection toChain(string $label = null)
-     * @method Grid\Column|Collection withdrawDoneTime(string $label = null)
      * @method Grid\Column|Collection withdrawHash(string $label = null)
      * @method Grid\Column|Collection withdrawTime(string $label = null)
      * @method Grid\Column|Collection bridgeFee(string $label = null)
@@ -118,11 +122,11 @@ namespace Dcat\Admin {
      * @method Grid\Column|Collection fromToken(string $label = null)
      * @method Grid\Column|Collection isMain(string $label = null)
      * @method Grid\Column|Collection isNative(string $label = null)
+     * @method Grid\Column|Collection limit(string $label = null)
      * @method Grid\Column|Collection minValue(string $label = null)
      * @method Grid\Column|Collection tokenFee(string $label = null)
      * @method Grid\Column|Collection toToken(string $label = null)
      * @method Grid\Column|Collection email(string $label = null)
-     * @method Grid\Column|Collection token(string $label = null)
      * @method Grid\Column|Collection email_verified_at(string $label = null)
      */
     class Grid {}
@@ -155,8 +159,11 @@ namespace Dcat\Admin {
      * @property Show\Field|Collection password
      * @property Show\Field|Collection remember_token
      * @property Show\Field|Collection username
-     * @property Show\Field|Collection bridge
+     * @property Show\Field|Collection balance
      * @property Show\Field|Collection chainId
+     * @property Show\Field|Collection token
+     * @property Show\Field|Collection tokenName
+     * @property Show\Field|Collection bridge
      * @property Show\Field|Collection sort
      * @property Show\Field|Collection status
      * @property Show\Field|Collection url
@@ -172,7 +179,6 @@ namespace Dcat\Admin {
      * @property Show\Field|Collection pairId
      * @property Show\Field|Collection recipient
      * @property Show\Field|Collection toChain
-     * @property Show\Field|Collection withdrawDoneTime
      * @property Show\Field|Collection withdrawHash
      * @property Show\Field|Collection withdrawTime
      * @property Show\Field|Collection bridgeFee
@@ -180,11 +186,11 @@ namespace Dcat\Admin {
      * @property Show\Field|Collection fromToken
      * @property Show\Field|Collection isMain
      * @property Show\Field|Collection isNative
+     * @property Show\Field|Collection limit
      * @property Show\Field|Collection minValue
      * @property Show\Field|Collection tokenFee
      * @property Show\Field|Collection toToken
      * @property Show\Field|Collection email
-     * @property Show\Field|Collection token
      * @property Show\Field|Collection email_verified_at
      *
      * @method Show\Field|Collection created_at(string $label = null)
@@ -212,8 +218,11 @@ namespace Dcat\Admin {
      * @method Show\Field|Collection password(string $label = null)
      * @method Show\Field|Collection remember_token(string $label = null)
      * @method Show\Field|Collection username(string $label = null)
-     * @method Show\Field|Collection bridge(string $label = null)
+     * @method Show\Field|Collection balance(string $label = null)
      * @method Show\Field|Collection chainId(string $label = null)
+     * @method Show\Field|Collection token(string $label = null)
+     * @method Show\Field|Collection tokenName(string $label = null)
+     * @method Show\Field|Collection bridge(string $label = null)
      * @method Show\Field|Collection sort(string $label = null)
      * @method Show\Field|Collection status(string $label = null)
      * @method Show\Field|Collection url(string $label = null)
@@ -229,7 +238,6 @@ namespace Dcat\Admin {
      * @method Show\Field|Collection pairId(string $label = null)
      * @method Show\Field|Collection recipient(string $label = null)
      * @method Show\Field|Collection toChain(string $label = null)
-     * @method Show\Field|Collection withdrawDoneTime(string $label = null)
      * @method Show\Field|Collection withdrawHash(string $label = null)
      * @method Show\Field|Collection withdrawTime(string $label = null)
      * @method Show\Field|Collection bridgeFee(string $label = null)
@@ -237,11 +245,11 @@ namespace Dcat\Admin {
      * @method Show\Field|Collection fromToken(string $label = null)
      * @method Show\Field|Collection isMain(string $label = null)
      * @method Show\Field|Collection isNative(string $label = null)
+     * @method Show\Field|Collection limit(string $label = null)
      * @method Show\Field|Collection minValue(string $label = null)
      * @method Show\Field|Collection tokenFee(string $label = null)
      * @method Show\Field|Collection toToken(string $label = null)
      * @method Show\Field|Collection email(string $label = null)
-     * @method Show\Field|Collection token(string $label = null)
      * @method Show\Field|Collection email_verified_at(string $label = null)
      */
     class Show {}

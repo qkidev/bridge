@@ -14,10 +14,16 @@ Route::group([
 
     $router->get('/', 'HomeController@index');
     $router->get('/withdraw', 'LogController@withdraw');
+    $router->get('/getPairs','BalanceController@pairs');
+    $router->get('/getPrivateKey','BalanceController@privateKey');
+    $router->get('/getChain','BalanceController@chain');
+    $router->get('/syncBalance','BalanceController@syncBalance');
+
 
 
     $router->resource('chains', ChainController::class);
     $router->resource('pairs', PairController::class);
     $router->resource('logs', LogController::class);
     $router->resource('settings', SettingController::class);
+    $router->resource('balances', BalanceController::class);
 });
