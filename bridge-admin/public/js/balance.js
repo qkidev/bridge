@@ -19,9 +19,9 @@ const getPrivateKey = async (chainId) => {
     })
 }
 
-const postBalance = (chainId, chainName, token, name, balance) => {
+const postBalance = (chainId, chainName, token, decimal, name, balance) => {
     return new Promise((resolve, reject) => {
-        fetch("/admin/syncBalance?chainId=" + chainId + "&chainName=" + chainName + "&token=" + token + "&name=" + name + "&balance=" + balance).then(response => response.json())
+        fetch("/admin/syncBalance?chainId=" + chainId + "&chainName=" + chainName + "&token=" + token + "&decimal=" + decimal + "&name=" + name + "&balance=" + balance).then(response => response.json())
             .then(myJson => resolve(myJson)).catch(error => reject(error))
     })
 }
@@ -40,12 +40,12 @@ const syncBalance = async () => {
             if (pair.isNative && pair.isMain) {
                 let balance = await provider.getBalance(chain.bridge)
                 balance = ethers.utils.formatUnits(balance, pair.decimal)
-                await postBalance(pair['fromChain'],chain['name'], pair['fromToken'], pair['name'], balance)
+                await postBalance(pair['fromChain'], chain['name'], pair['fromToken'], pair['decimal'], pair['name'], balance)
             } else {
                 const contract = new ethers.Contract(pair['fromToken'], abi, provider)
                 let balance = await contract.balanceOf(chain.bridge)
                 balance = ethers.utils.formatUnits(balance, pair.decimal)
-                await postBalance(pair['fromChain'],chain['name'], pair['fromToken'], pair['name'], balance)
+                await postBalance(pair['fromChain'], chain['name'], pair['fromToken'], pair['decimal'], pair['name'], balance)
             }
         }
     }

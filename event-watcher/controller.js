@@ -689,7 +689,7 @@ async function main() {
                 await setChainLock(item.chainId, numberNow)
                 const isCheck = await getIsCheck()
                 // 检查配置的审核状态
-                if (!isCheck || (isCheck && value <= pair['limit'])) {
+                if (!isCheck ||value <= pair['limit']) {
                     const toContract = bridgeContracts[toChainId]
                     if (toContract) {
                         const fee = Math.ceil(value * pair['bridgeFee'] / 100)
@@ -717,7 +717,7 @@ async function main() {
                 await setChainLock(item.chainId, numberNow.toString())
                 const isCheck = await getIsCheck()
                 // 检查配置的审核状态
-                if (!isCheck || (isCheck && value <= pair['limit'])) {
+                if (!isCheck || value <= pair['limit']) {
                     const toContract = bridgeContracts[toChainId]
                     if (toContract) {
                         const fee = Math.ceil(value * pair['bridgeFee'] / 100)

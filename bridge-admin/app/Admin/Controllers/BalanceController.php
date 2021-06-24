@@ -2,6 +2,7 @@
 
 namespace App\Admin\Controllers;
 
+use App\Admin\Extensions\BalanceTransfer;
 use App\Admin\Repositories\Balance;
 use App\Models\Chain;
 use App\Models\Pair;
@@ -29,13 +30,18 @@ class BalanceController extends AdminController
             $grid->column('chainName');
             $grid->column('tokenName');
             $grid->column('balance');
+            $grid->column('address')->editable();
+            $grid->column('amount')->editable();
 //            $grid->column('chainId');
 //            $grid->column('token');
 
             $grid->filter(function (Grid\Filter $filter) {
                 $filter->equal('id');
-
             });
+
+            $grid->actions([
+                new BalanceTransfer()
+            ]);
         });
     }
 
@@ -70,6 +76,8 @@ class BalanceController extends AdminController
             $form->text('chainId');
             $form->text('token');
             $form->text('tokenName');
+            $form->text('address');
+            $form->text('amount');
         });
     }
 
@@ -100,8 +108,9 @@ class BalanceController extends AdminController
         $token = $request->input('token');
         $name = $request->input('name');
         $balance = $request->input("balance");
+        $decimal = $request->input("decimal");
         $data = \App\Models\Balance::query()->updateOrCreate(['chainId' => $chainId, 'token' => $token],
-            ['balance' => $balance, 'tokenName' => $name, 'chainName' => $chainName]);
+            ['balance' => $balance, 'tokenName' => $name, 'chainName' => $chainName, 'decimal' => $decimal]);
         return response()->json($data);
     }
 }
