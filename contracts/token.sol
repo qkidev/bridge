@@ -29,20 +29,18 @@ contract SafeMath {
     return c;
   }
 }
-contract token is SafeMath{
+contract Token is SafeMath{
     string public name;
     string public symbol;
     uint8 public decimals;
     uint256 public totalSupply;
-    uint256 public totalBurn;
     address payable public owner;
-    address public miner;
-    bool public is_mint = true;
+    address payable public miner;
+    bool public isMint = true;
 
     /* This creates an array with all balances */
     mapping (address => uint256) public balanceOf;
     mapping (address => uint256) public freezeOf;
-    mapping (address => bool)  public whitelist;
     mapping (address => mapping (address => uint256)) public allowance;
 
     /* This generates a public event on the blockchain that will notify clients */
@@ -74,139 +72,59 @@ contract token is SafeMath{
     }
 
     /* Send coins */
-    function transfer(address _to, uint256 _value) public returns(bool success) {
-        require(_to != address(0)); // Prevent transfer to 0x0 address. Use burn() instead
-        require(_value > 0);
-        require(msg.sender != _to);//自己不能转给自己
-
-        uint fee = transfer_fee(msg.sender, _value);
-        uint sub_value = SafeMath.safeAdd(fee, _value); //扣除余额需要计算手续费
-
-        require(balanceOf[msg.sender] >= sub_value);//需要计算加上手续费后是否够
+    function transfer(address _to, uint256 _value) public returns (bool success) {
+        if (_to == address(0)) revert("0x0");                               // Prevent transfer to 0x0 address. Use burn() instead
+		if (_value <= 0) revert("value"); 
+        if (balanceOf[msg.sender] < _value) revert("no_enough");           // Check if the sender has enough
         if (balanceOf[_to] + _value < balanceOf[_to]) revert("overflows"); // Check for overflows
-
-        balanceOf[msg.sender] = SafeMath.safeSub(balanceOf[msg.sender], sub_value);// Subtract from the sender
+        balanceOf[msg.sender] = SafeMath.safeSub(balanceOf[msg.sender], _value);                     // Subtract from the sender
         balanceOf[_to] = SafeMath.safeAdd(balanceOf[_to], _value);                            // Add the same to the recipient
-        totalSupply -= fee;//总量减少手续费
         emit Transfer(msg.sender, _to, _value);                   // Notify anyone listening that this transfer took place
-        if (fee > 0)
-        {
-            emit Burn(msg.sender, fee);
-            totalBurn += fee;
-        }
         return true;
     }
 
     /* Allow another contract to spend some tokens in your behalf */
-    function approve(address _spender, uint256 _value) public returns (bool success) {
+    function approve(address _spender, uint256 _value) public
+        returns (bool success) {
 		if (_value <= 0) revert(); 
         allowance[msg.sender][_spender] = _value;
         return true;
     }
-
-    function transfer_fee(address _from, uint256 _value) public view returns(uint256 fee) {
-        if(whitelist[_from])
-            return 0;
-        uint8 scale = 5;// n/100
-        uint256 _fee = _value * scale / 100;
-        return _fee;
-    }
+       
 
     /* A contract attempts to get the coins */
-    function transferFrom(address _from, address _to, uint256 _value) public returns(bool success)  {
+    function transferFrom(address _from, address _to, uint256 _value) public returns (bool success)  {
         if (_to == address(0)) revert();                                // Prevent transfer to 0x0 address. Use burn() instead
-        if (_value <= 0) revert();
-        require(_from != _to);//自己不能转给自己
-
-        uint fee = transfer_fee(msg.sender,_value);
-        uint sub_value = SafeMath.safeAdd(fee, _value);
-
-
-        if (balanceOf[_from] < sub_value) revert();                 // Check if the sender has enough
+		if (_value <= 0) revert(); 
+        if (balanceOf[_from] < _value) revert();                 // Check if the sender has enough
         if (balanceOf[_to] + _value < balanceOf[_to]) revert();  // Check for overflows
-        if (sub_value > allowance[_from][msg.sender]) revert();     // Check allowance
-
-        balanceOf[_from] = SafeMath.safeSub(balanceOf[_from], sub_value);                           // Subtract from the sender
+        if (_value > allowance[_from][msg.sender]) revert();     // Check allowance
+        balanceOf[_from] = SafeMath.safeSub(balanceOf[_from], _value);                           // Subtract from the sender
         balanceOf[_to] = SafeMath.safeAdd(balanceOf[_to], _value);                             // Add the same to the recipient
-        allowance[_from][msg.sender] = SafeMath.safeSub(allowance[_from][msg.sender], sub_value);
-        totalSupply -= fee;//总量减少手续费
-        emit Transfer(_from, _to, _value);
-        if (fee > 0)
-        {
-            emit Burn(msg.sender, fee);
-            totalBurn += fee;
-        }
+        allowance[_from][msg.sender] = SafeMath.safeSub(allowance[_from][msg.sender], _value);
+        Transfer(_from, _to, _value);
         return true;
     }
+	
+	
+	// transfer balance to owner
+	function withdrawEther(uint256 amount) public{
+		if(msg.sender != owner)revert();
+		owner.transfer(amount);
+	}
 
-    //永久关闭mint
     function stopMint() public{
         require(msg.sender == owner);
-        is_mint = false;
+        isMint = false;
     }
 
     function mint(address account, uint256 amount) public {
-        require(miner == msg.sender, "not miner");
-        require(is_mint);
+        require(miner == msg.sender, "ERC20: Not miner");
+        require(isMint,"ERC20: Mint si stop");
 
         totalSupply += amount;
         balanceOf[account] += amount;
         emit Transfer(address(0), account, amount);
-    }
-
-    function burn(uint256 _value) public returns (bool success)  {
-        if (balanceOf[msg.sender] < _value) revert();            // Check if the sender has enough
-		if (_value <= 0) revert(); 
-        balanceOf[msg.sender] = SafeMath.safeSub(balanceOf[msg.sender], _value);                      // Subtract from the sender
-        totalSupply = SafeMath.safeSub(totalSupply,_value);                                // Updates totalSupply
-        Burn(msg.sender, _value);
-        return true;
-    }
-	
-	function freeze(uint256 _value) public returns (bool success)  {
-        if (balanceOf[msg.sender] < _value) revert();            // Check if the sender has enough
-		if (_value <= 0) revert(); 
-        balanceOf[msg.sender] = SafeMath.safeSub(balanceOf[msg.sender], _value);                      // Subtract from the sender
-        freezeOf[msg.sender] = SafeMath.safeAdd(freezeOf[msg.sender], _value);                                // Updates totalSupply
-        Freeze(msg.sender, _value);
-        return true;
-    }
-	
-	function unfreeze(uint256 _value) public returns (bool success) {
-        if (freezeOf[msg.sender] < _value) revert();            // Check if the sender has enough
-		if (_value <= 0) revert(); 
-        freezeOf[msg.sender] = SafeMath.safeSub(freezeOf[msg.sender], _value);                      // Subtract from the sender
-		balanceOf[msg.sender] = SafeMath.safeAdd(balanceOf[msg.sender], _value);
-        Unfreeze(msg.sender, _value);
-        return true;
-    }
-	
-	// transfer balance to owner
-	function withdrawQKI(uint256 amount) public{
-		require(msg.sender == owner);
-		owner.transfer(amount);
-	}
-
-    function setOwner(address payable newOwner) public{
-        require(msg.sender == owner);
-        owner = newOwner;
-    }
-
-    function setMiner(address newMiner) public{
-        require(msg.sender == owner);
-        miner = newMiner;
-    }
-
-    function setWhitelist(address account) public{
-        require(msg.sender == owner);
-
-        uint32 size;
-        assembly {
-            size := extcodesize(account)
-        }
-        require(size > 0, "Must be a contract");
-
-        whitelist[account] = !whitelist[account];
     }
 	
 	// can accept ether
