@@ -2,8 +2,7 @@
 
 namespace App\Admin\Controllers;
 
-use App\Admin\Extensions\CheckRow;
-use App\Admin\Extensions\Copy;
+use App\Admin\Extensions\CheckWithdraw;
 use App\Admin\Repositories\Log;
 use App\Models\Chain;
 use App\Models\Pair;
@@ -48,7 +47,7 @@ class LogController extends AdminController
             });
 
             $grid->actions([
-                new CheckRow()
+                new CheckWithdraw()
             ]);
         });
     }

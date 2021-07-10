@@ -105,12 +105,534 @@ const withdrawDone = (hash, pairId, recipient, value) => {
 
 // 跨链桥ABI
 const abiBridge = [
-    "event Deposit(uint toChainId, address fromToken, address toToken, address recipient, uint256 value)",
-    "event DepositNative(uint toChainId, bool isMain, address recipient, uint256 value)",
-    "event WithdrawDone(uint toChainId, address fromToken, address toToken, address recipient, uint256 value)",
-    "event WithdrawNativeDone(uint fromChainId, address recipient,bool isMain, uint256 value)",
-    "function withdraw(uint toChainId,address toToken,address recipient,uint256 value)",
-    "function withdrawNative(uint toChainId, address payable recipient, bool isMain, uint256 value)"
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "chainId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "toToken",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+            }
+        ],
+        "name": "deposit",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "toChainId",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "fromToken",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "toToken",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "recipient",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+            }
+        ],
+        "name": "Deposit",
+        "type": "event"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "toChainId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bool",
+                "name": "isMain",
+                "type": "bool"
+            },
+            {
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+            }
+        ],
+        "name": "depositNative",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "toChainId",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "bool",
+                "name": "isMain",
+                "type": "bool"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "recipient",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+            }
+        ],
+        "name": "DepositNative",
+        "type": "event"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address payable",
+                "name": "recipient",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+            }
+        ],
+        "name": "nativeTransfer",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address payable",
+                "name": "newAdmin",
+                "type": "address"
+            }
+        ],
+        "name": "setAdmin",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "toChainId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bool",
+                "name": "isMain",
+                "type": "bool"
+            },
+            {
+                "internalType": "bool",
+                "name": "state",
+                "type": "bool"
+            }
+        ],
+        "name": "setNativeIsRun",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "toChainId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "toToken",
+                "type": "address"
+            },
+            {
+                "internalType": "bool",
+                "name": "state",
+                "type": "bool"
+            }
+        ],
+        "name": "setTokenIsRun",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "fromToken",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "recipient",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+            }
+        ],
+        "name": "tokenTransfer",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "toChainId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "toToken",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "recipient",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+            }
+        ],
+        "name": "withdraw",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "toChainId",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "fromToken",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "toToken",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "recipient",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+            }
+        ],
+        "name": "WithdrawDone",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "fromChainId",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "recipient",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "bool",
+                "name": "isMain",
+                "type": "bool"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+            }
+        ],
+        "name": "WithdrawNativeDone",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "_address",
+                "type": "address"
+            }
+        ],
+        "name": "adminChanged",
+        "type": "event"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "toChainId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bool",
+                "name": "isRun",
+                "type": "bool"
+            },
+            {
+                "internalType": "bool",
+                "name": "isMain",
+                "type": "bool"
+            },
+            {
+                "internalType": "address",
+                "name": "fromToken",
+                "type": "address"
+            }
+        ],
+        "name": "nativeInsert",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address payable",
+                "name": "newOwner",
+                "type": "address"
+            }
+        ],
+        "name": "setOwner",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "toChainId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "toToken",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "fromToken",
+                "type": "address"
+            },
+            {
+                "internalType": "bool",
+                "name": "isRun",
+                "type": "bool"
+            },
+            {
+                "internalType": "bool",
+                "name": "isMain",
+                "type": "bool"
+            }
+        ],
+        "name": "tokenInsert",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "fromChainId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address payable",
+                "name": "recipient",
+                "type": "address"
+            },
+            {
+                "internalType": "bool",
+                "name": "isMain",
+                "type": "bool"
+            },
+            {
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+            }
+        ],
+        "name": "withdrawNative",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "stateMutability": "payable",
+        "type": "receive"
+    },
+    {
+        "inputs": [],
+        "name": "admin",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "name": "natives",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "isRun",
+                "type": "bool"
+            },
+            {
+                "internalType": "bool",
+                "name": "isMain",
+                "type": "bool"
+            },
+            {
+                "internalType": "address",
+                "name": "local",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "owner",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "tokens",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "isRun",
+                "type": "bool"
+            },
+            {
+                "internalType": "bool",
+                "name": "isMain",
+                "type": "bool"
+            },
+            {
+                "internalType": "address",
+                "name": "local",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    }
 ]
 
 // 全部链的跨链桥合约
@@ -167,7 +689,7 @@ async function main() {
                 await setChainLock(item.chainId, numberNow)
                 const isCheck = await getIsCheck()
                 // 检查配置的审核状态
-                if (!isCheck || (isCheck && value <= pair['limit'])) {
+                if (!isCheck ||value <= pair['limit']) {
                     const toContract = bridgeContracts[toChainId]
                     if (toContract) {
                         const fee = Math.ceil(value * pair['bridgeFee'] / 100)
@@ -195,7 +717,7 @@ async function main() {
                 await setChainLock(item.chainId, numberNow.toString())
                 const isCheck = await getIsCheck()
                 // 检查配置的审核状态
-                if (!isCheck || (isCheck && value <= pair['limit'])) {
+                if (!isCheck || value <= pair['limit']) {
                     const toContract = bridgeContracts[toChainId]
                     if (toContract) {
                         const fee = Math.ceil(value * pair['bridgeFee'] / 100)
