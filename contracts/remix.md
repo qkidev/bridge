@@ -1,1 +1,1 @@
-remixd -s C:\Users\CHEN\Desktop\bridge\bridge-fork\contracts --remix-ide https://remix.ethereum.org
+remixd -s E:\code\bridge-code\contracts --remix-ide https://remix.ethereum.org
