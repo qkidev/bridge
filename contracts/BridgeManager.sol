@@ -15,7 +15,7 @@ contract BridgeManager {
 
     mapping(address => bool) public isManager;
 
-    mapping(byte32 => bool) public isComplete;
+    mapping(bytes => bool) public isComplete;
 
 
     // 需要多签数量
@@ -26,7 +26,7 @@ contract BridgeManager {
 
     constructor(uint _signLimit, address _bridgeAddress) {
         owner = msg.sender;
-        managers.push(msg.sender);
+        isManager[msg.sender]=true;
         signLimit = _signLimit;
         bridgeAddress = _bridgeAddress;
     }
@@ -37,7 +37,7 @@ contract BridgeManager {
     }
 
     modifier onlyManager {
-        require(isManager(msg.sender), "Bridge Manager: only manager can call this function");
+        require(isManager[msg.sender], "Bridge Manager: only manager can call this function");
         _;
     }
 
@@ -58,7 +58,7 @@ contract BridgeManager {
         isManager[_address] = true;
     }
 
-    function managerDel(uint _address) public onlyOwner {
+    function managerDel(address _address) public onlyOwner {
         isManager[_address] = false;
     }
 
