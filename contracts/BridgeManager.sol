@@ -13,8 +13,10 @@ contract BridgeManager {
 
     address public bridgeAddress;
 
-    // 全部管理员
-    address[] public managers;
+    mapping(address => bool) public isManager;
+
+    mapping(bytes => bool) public isComplete;
+
 
     // 需要多签数量
     uint public signLimit;
@@ -24,7 +26,7 @@ contract BridgeManager {
 
     constructor(uint _signLimit, address _bridgeAddress) {
         owner = msg.sender;
-        managers.push(msg.sender);
+        isManager[msg.sender]=true;
         signLimit = _signLimit;
         bridgeAddress = _bridgeAddress;
     }
@@ -35,14 +37,7 @@ contract BridgeManager {
     }
 
     modifier onlyManager {
-        bool isManager = false;
-        for (uint i = 0; i < managers.length; i++) {
-            if (managers[i] == msg.sender) {
-                isManager = true;
-                break;
-            }
-        }
-        require(isManager, "Bridge Manager: only manager can call this function");
+        require(isManager[msg.sender], "Bridge Manager: only manager can call this function");
         _;
     }
 
@@ -60,11 +55,11 @@ contract BridgeManager {
     }
 
     function managerAdd(address _address) public onlyOwner {
-        managers.push(_address);
+        isManager[_address] = true;
     }
 
-    function managerDel(uint index) public onlyOwner {
-        managers[index] = address(0);
+    function managerDel(address _address) public onlyOwner {
+        isManager[_address] = false;
     }
 
 
@@ -80,7 +75,13 @@ contract BridgeManager {
         if (!isSign) {
             multiSigns[toChainId][hash].push(msg.sender);
         }
-        return multiSigns[toChainId][hash].length >= signLimit;
+
+        if(!isComplete[hash] && multiSigns[toChainId][hash].length >= signLimit){
+            isComplete[hash] = true;
+            return true;
+        }else{
+            return false;
+        }
     }
 
     function withdraw(uint toChainId, address toToken, address recipient, uint256 value, bytes memory hash) public onlyManager {
