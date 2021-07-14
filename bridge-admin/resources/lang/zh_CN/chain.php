@@ -11,7 +11,8 @@ return [
         'sort' => '排序',
         'title' => '标题',
         'url' => '主网节点',
-        'bridge' => '跨链桥地址'
+        'bridge' => '跨链桥地址',
+        'bridge_manager' => '管理员合约地址'
     ],
     'options' => [
     ],

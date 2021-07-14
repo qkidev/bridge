@@ -26,6 +26,7 @@ class ChainController extends AdminController
             $grid->column('sort');
             $grid->column('title');
             $grid->column('bridge');
+            $grid->column('bridge_manager');
 
             $grid->filter(function (Grid\Filter $filter) {
                 $filter->equal('id');
@@ -70,6 +71,7 @@ class ChainController extends AdminController
             $form->text('title');
             $form->text('url');
             $form->text('bridge');
+            $form->text('bridge_manager');
         });
     }
 }

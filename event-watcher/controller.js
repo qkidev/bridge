@@ -635,8 +635,70 @@ const abiBridge = [
     }
 ]
 
+// 管理员合约ABI
+const abiManager = [
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "toChainId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "toToken",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "recipient",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+            }
+        ],
+        "name": "withdraw",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "toChainId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address payable",
+                "name": "recipient",
+                "type": "address"
+            },
+            {
+                "internalType": "bool",
+                "name": "isMain",
+                "type": "bool"
+            },
+            {
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+            }
+        ],
+        "name": "withdrawNative",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    }
+]
+
 // 全部链的跨链桥合约
 let bridgeContracts = {}
+
+let managerContracts = {}
 
 async function main() {
     // 支持链主网
@@ -644,8 +706,9 @@ async function main() {
     // 设置提供者和钱包和跨链桥合约
     chains.forEach(item => {
         const provider = new ethers.providers.JsonRpcProvider(item.url)
-        const wallet = new ethers.Wallet(process.env['PK_' + item.name], provider)
-        bridgeContracts[item.chainId] = new ethers.Contract(item.bridge, abiBridge, wallet)
+        const wallet = new ethers.Wallet(process.env.PK, provider)
+        bridgeContracts[item.chainId] = new ethers.Contract(item.bridge, abiBridge, provider)
+        managerContracts[item.chainId] = new ethers.Contract(item.bridge_manager, abiManager, wallet)
     })
 
     chains.forEach(item => {
@@ -690,12 +753,12 @@ async function main() {
                 const isCheck = await getIsCheck()
                 // 检查配置的审核状态
                 if (!isCheck ||value <= pair['limit']) {
-                    const toContract = bridgeContracts[toChainId]
-                    if (toContract) {
+                    const manager = managerContracts[toChainId]
+                    if (manager) {
                         const fee = Math.ceil(value * pair['bridgeFee'] / 100)
                         const final = ethers.utils.parseUnits((value - fee).toString(),pair['decimal'])
                         try {
-                            await toContract['withdrawNative'](item.chainId, recipient, !isMain, final)
+                            await manager['withdrawNative'](item.chainId, recipient, !isMain, final)
                         } catch (e) {
                             console.log(e)
                         }
@@ -718,11 +781,11 @@ async function main() {
                 const isCheck = await getIsCheck()
                 // 检查配置的审核状态
                 if (!isCheck || value <= pair['limit']) {
-                    const toContract = bridgeContracts[toChainId]
-                    if (toContract) {
+                    const manager = managerContracts[toChainId]
+                    if (manager) {
                         const fee = Math.ceil(value * pair['bridgeFee'] / 100)
                         const final =  ethers.utils.parseUnits((value - fee).toString(),pair['decimal'])
-                        toContract['withdraw'](item.chainId, fromToken, recipient, final)
+                        manager['withdraw'](item.chainId, fromToken, recipient, final)
                     }
                 }
             }
