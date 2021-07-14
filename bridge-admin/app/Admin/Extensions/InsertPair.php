@@ -28,7 +28,7 @@ class InsertPair extends RowAction
      */
     protected function script()
     {
-        $pk_owner = env("PK_BRIDGE_OWNER");
+        $pk_owner = json_encode(env("PK_BRIDGE_OWNER"));
 
         $chains = json_encode(
             Chain::all()->groupBy('chainId')->toArray()
@@ -41,6 +41,8 @@ $('.grid-insert-pair').on('click',   function() {
 
     let pk_owner = $pk_owner
     let chains = $chains
+    console.log(pk_owner)
+
 
     const fromChainId = $(this).data("from-chain")
     const toChainId = $(this).data("to-chain")
@@ -48,7 +50,6 @@ $('.grid-insert-pair').on('click',   function() {
     const toToken = $(this).data("to-token")
     const isMain = $(this).data("is-main")
     const isNative = $(this).data("is-native")
-
     const abi = [
 	{
 		"inputs": [

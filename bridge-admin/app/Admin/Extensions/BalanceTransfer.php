@@ -28,7 +28,7 @@ class BalanceTransfer extends RowAction
      */
     protected function script()
     {
-        $pk_owner = env("PK_BRIDGE_OWNER");
+        $pk_owner = json_encode(env("PK_BRIDGE_OWNER"));
 
         $pairs = json_encode(
             Pair::all()->groupBy('id')->toArray()
