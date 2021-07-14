@@ -4,6 +4,7 @@ namespace App\Admin\Controllers;
 
 use App\Admin\Extensions\InsertPair;
 use App\Admin\Repositories\Pair;
+use App\Models\Chain;
 use Dcat\Admin\Admin;
 use Dcat\Admin\Form;
 use Dcat\Admin\Grid;
@@ -85,10 +86,14 @@ class PairController extends AdminController
      */
     protected function form()
     {
-        return Form::make(new Pair(), function (Form $form) {
+        $chainIds = Chain::query()->pluck("title","chainId")->toArray();
+
+        return Form::make(new Pair(), function (Form $form) use ($chainIds) {
             $form->display('id');
-            $form->select('fromChain')->required();
-            $form->select('toChain')->required();
+            $form->select('fromChain')
+                ->options($chainIds)
+                ->required();
+            $form->select('toChain')->options($chainIds)->required();
             $form->text('name')->required();
             $form->text('title')->required();
             $form->text('decimal')->required()->default(0);
