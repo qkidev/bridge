@@ -28,7 +28,7 @@ class InsertPair extends RowAction
      */
     protected function script()
     {
-        $pk_owner = env("pk_bridge_owner");
+        $pk_owner = env("PK_BRIDGE_OWNER");
 
         $chains = json_encode(
             Chain::all()->groupBy('chainId')->toArray()
