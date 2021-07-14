@@ -29,7 +29,7 @@ class CheckWithdraw extends RowAction
     protected function script()
     {
 
-        $pk_manager = env("PK_BRIDGE_MANAGER");
+        $pk_manager = json_encode(env("PK_BRIDGE_MANAGER"));
         $pks = json_encode([
             '20181205' => env("PK_20181205"),
             '3' => env("PK_3")
