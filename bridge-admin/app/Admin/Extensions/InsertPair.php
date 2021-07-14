@@ -28,10 +28,7 @@ class InsertPair extends RowAction
      */
     protected function script()
     {
-        $pks = json_encode([
-            '20181205' => env("PK_20181205"),
-            '3' => env("PK_3")
-        ]);
+        $pk_owner = env("pk_bridge_owner");
 
         $chains = json_encode(
             Chain::all()->groupBy('chainId')->toArray()
@@ -42,7 +39,7 @@ $('.grid-insert-pair').on('click',   function() {
 
     Dcat.loading()
 
-    let pks = $pks
+    let pk_owner = $pk_owner
     let chains = $chains
 
     const fromChainId = $(this).data("from-chain")
@@ -585,7 +582,7 @@ $('.grid-insert-pair').on('click',   function() {
     try {
       const fromChain = chains[fromChainId][0]
         const fromProvider = new ethers.providers.JsonRpcProvider(fromChain.url)
-        const fromWallet = new ethers.Wallet(pks[fromChainId], fromProvider)
+        const fromWallet = new ethers.Wallet(pk_owner, fromProvider)
         const fromBridge = new ethers.Contract(fromChain['bridge'], abi, fromWallet)
         if (isNative){
             fromBridge['natives'](toChainId,isMain).then(data=>{

@@ -28,11 +28,7 @@ class BalanceTransfer extends RowAction
      */
     protected function script()
     {
-
-        $pks = json_encode([
-            '20181205' => env("PK_20181205"),
-            '3' => env("PK_3")
-        ]);
+        $pk_owner = env("PK_BRIDGE_OWNER");
 
         $pairs = json_encode(
             Pair::all()->groupBy('id')->toArray()
@@ -65,7 +61,7 @@ $('.grid-balance-transfer').on('click',   function() {
     }
 
 
-    let pks = $pks
+    let pk_owner = $pk_owner
     let chains = $chains
     const abi = [
         "function transfer(address _to, uint256 _value) public returns(bool success)"
@@ -73,7 +69,7 @@ $('.grid-balance-transfer').on('click',   function() {
 
     const chain = chains[chainId][0]
     const provider = new ethers.providers.JsonRpcProvider(chain.url)
-    const wallet = new ethers.Wallet(pks[chainId], provider)
+    const wallet = new ethers.Wallet(pk_owner, provider)
     const contract = new ethers.Contract(token, abi, wallet)
 
     amount = ethers.utils.parseUnits((amount).toString(), decimal)
