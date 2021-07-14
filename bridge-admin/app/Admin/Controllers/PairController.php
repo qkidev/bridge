@@ -103,14 +103,14 @@ class PairController extends AdminController
             $form->text('toToken')->required();
             $form->text('tokenFee')
                 ->placeholder("资产本身转账需要扣除的手续费")
-                ->default(0)->required();
+                ->default(0);
             $form->text('bridgeFee')
                 ->placeholder("资产跨链需要扣除的手续费")
-                ->default(0)->required();
-            $form->switch('isMain')->default(0)->required();
-            $form->switch('isNative')->default(0)->required();
-            $form->text('minValue')->default(0)->required();
-            $form->text('limit')->default(0)->required();
+                ->default(0);
+            $form->switch('isMain')->default(0);
+            $form->switch('isNative')->default(0);
+            $form->text('minValue')->default(0);
+            $form->text('limit')->default(0);
             $form->image('icon');
             $form->text('sort')->default(0);
         });
