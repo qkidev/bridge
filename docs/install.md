@@ -47,6 +47,7 @@
 
 
 1.在.env中准备需要的密钥和数据库配置
+.env中 PK 为 管理员 私钥
 
 
 2.保持后台运行命令`node controller.js`
