@@ -772,11 +772,13 @@ async function main() {
 
         // 主网币跨入成功
         contract.on("WithdrawNativeDone", async (toChainId, recipient, isMain, value, depositHash,event) => {
+            console.log("WithdrawNativeDone")
             withdrawDone(depositHash,event.transactionHash)
         })
 
         // 代币跨入成功
         contract.on("WithdrawDone", async (toChainId, fromToken, toToken, recipient, value,depositHash, event) => {
+            console.log("WithdrawDone")
             // console.log(depositHash,event.transactionHash)
             // toChainId = toChainId.toString()
             // console.log (toChainId, fromToken, toToken, recipient, value,event.transactionHash)
@@ -785,6 +787,7 @@ async function main() {
 
         // 主网币跨出
         contract.on("DepositNative", async (toChainId, isMain, recipient, value, event) => {
+            console.log("DepositNative")
             toChainId = toChainId.toString()
             isMain = isMain ? 1 : 0
             value = value.toString() * 1
@@ -816,6 +819,7 @@ async function main() {
 
         // 执行代币跨出操作
         contract.on("Deposit", async (toChainId, fromToken, toToken, recipient, value, event) => {
+            console.log("Deposit")
             value = value.toString() * 1
             toChainId = toChainId.toString()
             const lock = await getChainLock(item.chainId)
@@ -833,7 +837,7 @@ async function main() {
                     if (manager) {
                         const fee = Math.ceil(value * pair['bridgeFee'] / 100)
                         const final = ethers.utils.parseUnits((value - fee).toString(), pair['decimal'])
-                        // console.log(item.chainId, fromToken, recipient, final.toString(), event.transactionHash)
+                        console.log(item.chainId, fromToken, recipient, final.toString(), event.transactionHash)
                         manager['withdraw'](item.chainId, fromToken, recipient, final, event.transactionHash)
                     }
                 }
