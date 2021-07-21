@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: SimPL-2.0
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.0;
 
 interface IERC20 {
 
@@ -125,9 +125,9 @@ contract Bridge is BridgeAdmin {
 
     event DepositNative(uint toChainId, bool isMain, address recipient, uint256 value);
 
-    event WithdrawDone(uint toChainId, address fromToken, address toToken, address recipient, uint256 value);
+    event WithdrawDone(uint toChainId, address fromToken, address toToken, address recipient, uint256 value, bytes depositHash);
 
-    event WithdrawNativeDone(uint fromChainId, address recipient, bool isMain, uint256 value);
+    event WithdrawNativeDone(uint fromChainId, address recipient, bool isMain, uint256 value, bytes depositHash);
 
     modifier onlyOwner {
         require(msg.sender == owner, "Bridge: only owner can call this function");
@@ -190,7 +190,7 @@ contract Bridge is BridgeAdmin {
         emit DepositNative(toChainId, isMain, msg.sender, value);
     }
 
-    function withdraw(uint toChainId, address toToken, address recipient, uint256 value) public onlyManager {
+    function withdraw(uint toChainId, address toToken, address recipient, uint256 value, bytes memory depositHash) public onlyManager {
         Token storage local = tokens[toChainId][toToken];
         IERC20 token = IERC20(local.local);
         if (local.isMain) {
@@ -200,11 +200,11 @@ contract Bridge is BridgeAdmin {
             // 侧链 铸币
             token.mint(recipient, value);
         }
-        emit WithdrawDone(toChainId, local.local, toToken, recipient, value);
+        emit WithdrawDone(toChainId, local.local, toToken, recipient, value, depositHash);
     }
 
 
-    function withdrawNative(uint toChainId, address payable recipient, bool isMain, uint256 value) public onlyManager {
+    function withdrawNative(uint toChainId, address payable recipient, bool isMain, uint256 value, bytes memory depositHash) public onlyManager {
         Token storage native = natives[toChainId][isMain];
         require(native.isRun, "Bridge: chain is not support");
         if (native.isMain) {
@@ -216,7 +216,7 @@ contract Bridge is BridgeAdmin {
             IERC20 token = IERC20(native.local);
             token.mint(recipient, value);
         }
-        emit WithdrawNativeDone(toChainId, recipient, isMain, value);
+        emit WithdrawNativeDone(toChainId, recipient, isMain, value, depositHash);
     }
 
     receive() external payable {}

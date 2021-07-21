@@ -86,18 +86,16 @@ const getPairNative = (fromChainId, toChainId, isMain) => {
 }
 
 const logSave = (pairId, recipient, value, fromChain, toChain, depositHash) => {
-    let depositTime = (new Date()).getTime()
-    depositTime= (depositTime/1000).toFixed()
+    const depositTime = Math.round(new Date() / 1000)
     const data = {pairId, recipient, value, fromChain, toChain, depositHash, depositTime}
     connection.query('INSERT INTO log SET ?', data, function (error, results, fields) {
         if (error) throw error;
     });
 }
 
-const withdrawDone = (hash, pairId, recipient, value) => {
-    let time = (new Date()).getTime()
-    time= (time/1000).toFixed()
-    connection.query('UPDATE log SET withdrawHash = ?, withdrawTime = ? WHERE pairId = ? AND recipient= ? AND value = ?', [hash, time, pairId, recipient, value], function (error, results, fields) {
+const withdrawDone = (depositHash,withdrawHash) => {
+    const time =Math.round(new Date() / 1000)
+    connection.query("UPDATE log SET withdrawHash = ?, withdrawTime = ? WHERE depositHash = ?", [withdrawHash, time, depositHash], function (error, results, fields) {
         if (error) throw error;
     });
 
@@ -105,29 +103,6 @@ const withdrawDone = (hash, pairId, recipient, value) => {
 
 // 跨链桥ABI
 const abiBridge = [
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "chainId",
-                "type": "uint256"
-            },
-            {
-                "internalType": "address",
-                "name": "toToken",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "value",
-                "type": "uint256"
-            }
-        ],
-        "name": "deposit",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
     {
         "inputs": [],
         "stateMutability": "nonpayable",
@@ -171,29 +146,6 @@ const abiBridge = [
         "type": "event"
     },
     {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "toChainId",
-                "type": "uint256"
-            },
-            {
-                "internalType": "bool",
-                "name": "isMain",
-                "type": "bool"
-            },
-            {
-                "internalType": "uint256",
-                "name": "value",
-                "type": "uint256"
-            }
-        ],
-        "name": "depositNative",
-        "outputs": [],
-        "stateMutability": "payable",
-        "type": "function"
-    },
-    {
         "anonymous": false,
         "inputs": [
             {
@@ -225,134 +177,6 @@ const abiBridge = [
         "type": "event"
     },
     {
-        "inputs": [
-            {
-                "internalType": "address payable",
-                "name": "recipient",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "value",
-                "type": "uint256"
-            }
-        ],
-        "name": "nativeTransfer",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address payable",
-                "name": "newAdmin",
-                "type": "address"
-            }
-        ],
-        "name": "setAdmin",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "toChainId",
-                "type": "uint256"
-            },
-            {
-                "internalType": "bool",
-                "name": "isMain",
-                "type": "bool"
-            },
-            {
-                "internalType": "bool",
-                "name": "state",
-                "type": "bool"
-            }
-        ],
-        "name": "setNativeIsRun",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "toChainId",
-                "type": "uint256"
-            },
-            {
-                "internalType": "address",
-                "name": "toToken",
-                "type": "address"
-            },
-            {
-                "internalType": "bool",
-                "name": "state",
-                "type": "bool"
-            }
-        ],
-        "name": "setTokenIsRun",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "fromToken",
-                "type": "address"
-            },
-            {
-                "internalType": "address",
-                "name": "recipient",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "value",
-                "type": "uint256"
-            }
-        ],
-        "name": "tokenTransfer",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "toChainId",
-                "type": "uint256"
-            },
-            {
-                "internalType": "address",
-                "name": "toToken",
-                "type": "address"
-            },
-            {
-                "internalType": "address",
-                "name": "recipient",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "value",
-                "type": "uint256"
-            }
-        ],
-        "name": "withdraw",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
         "anonymous": false,
         "inputs": [
             {
@@ -384,6 +208,12 @@ const abiBridge = [
                 "internalType": "uint256",
                 "name": "value",
                 "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "bytes",
+                "name": "depositHash",
+                "type": "bytes"
             }
         ],
         "name": "WithdrawDone",
@@ -415,6 +245,12 @@ const abiBridge = [
                 "internalType": "uint256",
                 "name": "value",
                 "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "bytes",
+                "name": "depositHash",
+                "type": "bytes"
             }
         ],
         "name": "WithdrawNativeDone",
@@ -432,6 +268,78 @@ const abiBridge = [
         ],
         "name": "adminChanged",
         "type": "event"
+    },
+    {
+        "inputs": [],
+        "name": "admin",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "chainId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "toToken",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+            }
+        ],
+        "name": "deposit",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "toChainId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bool",
+                "name": "isMain",
+                "type": "bool"
+            },
+            {
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+            }
+        ],
+        "name": "depositNative",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "manager",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
     },
     {
         "inputs": [
@@ -465,64 +373,8 @@ const abiBridge = [
         "inputs": [
             {
                 "internalType": "address payable",
-                "name": "newOwner",
-                "type": "address"
-            }
-        ],
-        "name": "setOwner",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "toChainId",
-                "type": "uint256"
-            },
-            {
-                "internalType": "address",
-                "name": "toToken",
-                "type": "address"
-            },
-            {
-                "internalType": "address",
-                "name": "fromToken",
-                "type": "address"
-            },
-            {
-                "internalType": "bool",
-                "name": "isRun",
-                "type": "bool"
-            },
-            {
-                "internalType": "bool",
-                "name": "isMain",
-                "type": "bool"
-            }
-        ],
-        "name": "tokenInsert",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "fromChainId",
-                "type": "uint256"
-            },
-            {
-                "internalType": "address payable",
                 "name": "recipient",
                 "type": "address"
-            },
-            {
-                "internalType": "bool",
-                "name": "isMain",
-                "type": "bool"
             },
             {
                 "internalType": "uint256",
@@ -530,26 +382,9 @@ const abiBridge = [
                 "type": "uint256"
             }
         ],
-        "name": "withdrawNative",
+        "name": "nativeTransfer",
         "outputs": [],
         "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "stateMutability": "payable",
-        "type": "receive"
-    },
-    {
-        "inputs": [],
-        "name": "admin",
-        "outputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
         "type": "function"
     },
     {
@@ -602,6 +437,147 @@ const abiBridge = [
     {
         "inputs": [
             {
+                "internalType": "address payable",
+                "name": "newAdmin",
+                "type": "address"
+            }
+        ],
+        "name": "setAdmin",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_manager",
+                "type": "address"
+            }
+        ],
+        "name": "setManager",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "toChainId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bool",
+                "name": "isMain",
+                "type": "bool"
+            },
+            {
+                "internalType": "bool",
+                "name": "state",
+                "type": "bool"
+            }
+        ],
+        "name": "setNativeIsRun",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address payable",
+                "name": "newOwner",
+                "type": "address"
+            }
+        ],
+        "name": "setOwner",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "toChainId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "toToken",
+                "type": "address"
+            },
+            {
+                "internalType": "bool",
+                "name": "state",
+                "type": "bool"
+            }
+        ],
+        "name": "setTokenIsRun",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "toChainId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "toToken",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "fromToken",
+                "type": "address"
+            },
+            {
+                "internalType": "bool",
+                "name": "isRun",
+                "type": "bool"
+            },
+            {
+                "internalType": "bool",
+                "name": "isMain",
+                "type": "bool"
+            }
+        ],
+        "name": "tokenInsert",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "fromToken",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "recipient",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+            }
+        ],
+        "name": "tokenTransfer",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
                 "internalType": "uint256",
                 "name": "",
                 "type": "uint256"
@@ -632,11 +608,7 @@ const abiBridge = [
         ],
         "stateMutability": "view",
         "type": "function"
-    }
-]
-
-// 管理员合约ABI
-const abiManager = [
+    },
     {
         "inputs": [
             {
@@ -658,6 +630,11 @@ const abiManager = [
                 "internalType": "uint256",
                 "name": "value",
                 "type": "uint256"
+            },
+            {
+                "internalType": "bytes",
+                "name": "depositHash",
+                "type": "bytes"
             }
         ],
         "name": "withdraw",
@@ -686,6 +663,85 @@ const abiManager = [
                 "internalType": "uint256",
                 "name": "value",
                 "type": "uint256"
+            },
+            {
+                "internalType": "bytes",
+                "name": "depositHash",
+                "type": "bytes"
+            }
+        ],
+        "name": "withdrawNative",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "stateMutability": "payable",
+        "type": "receive"
+    }
+]
+
+// 管理员合约ABI
+const abiManager = [
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "toChainId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "toToken",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "recipient",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bytes",
+                "name": "hash",
+                "type": "bytes"
+            }
+        ],
+        "name": "withdraw",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "toChainId",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address payable",
+                "name": "recipient",
+                "type": "address"
+            },
+            {
+                "internalType": "bool",
+                "name": "isMain",
+                "type": "bool"
+            },
+            {
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bytes",
+                "name": "hash",
+                "type": "bytes"
             }
         ],
         "name": "withdrawNative",
@@ -715,25 +771,16 @@ async function main() {
         const contract = bridgeContracts[item.chainId]
 
         // 主网币跨入成功
-        contract.on("WithdrawNativeDone", async (toChainId, recipient, isMain, value, event) => {
-            toChainId = toChainId.toString()
-            const pair = await getPairNative(item.chainId, toChainId, isMain)
-            if (pair) {
-                withdrawDone(event.transactionHash, pair.id, recipient, value)
-                console.log(`[主网币][到账][成功] ${value} 个  ${pair.name} 从  ${item.chainId} 到 ${toChainId}`)
-            } else {
-                console.log(`跨链对不存在: fromChainId=${item.chainId}&toChainId=${toChainId}&isMain=${isMain}`)
-            }
+        contract.on("WithdrawNativeDone", async (toChainId, recipient, isMain, value, depositHash,event) => {
+            withdrawDone(depositHash,event.transactionHash)
         })
 
         // 代币跨入成功
-        contract.on("WithdrawDone", async (toChainId, fromToken, toToken, recipient, value, event) => {
-            toChainId = toChainId.toString()
-            const pair = await getPair(item.chainId, toChainId, fromToken, toToken)
-            if (pair) {
-                console.log("[到账][成功] 链 " + toChainId, "代币 " + pair.name, "地址 " + recipient, "数额 " + value)
-                withdrawDone(event.transactionHash, pair.id, recipient, value)
-            }
+        contract.on("WithdrawDone", async (toChainId, fromToken, toToken, recipient, value,depositHash, event) => {
+            // console.log(depositHash,event.transactionHash)
+            // toChainId = toChainId.toString()
+            // console.log (toChainId, fromToken, toToken, recipient, value,event.transactionHash)
+            withdrawDone(depositHash,event.transactionHash)
         })
 
         // 主网币跨出
@@ -752,13 +799,13 @@ async function main() {
                 await setChainLock(item.chainId, numberNow)
                 const isCheck = await getIsCheck()
                 // 检查配置的审核状态
-                if (!isCheck ||value <= pair['limit']) {
+                if (!isCheck || value <= pair['limit']) {
                     const manager = managerContracts[toChainId]
                     if (manager) {
                         const fee = Math.ceil(value * pair['bridgeFee'] / 100)
-                        const final = ethers.utils.parseUnits((value - fee).toString(),pair['decimal'])
+                        const final = ethers.utils.parseUnits((value - fee).toString(), pair['decimal'])
                         try {
-                            await manager['withdrawNative'](item.chainId, recipient, !isMain, final)
+                            await manager['withdrawNative'](item.chainId, recipient, !isMain, final, event.transactionHash)
                         } catch (e) {
                             console.log(e)
                         }
@@ -769,6 +816,7 @@ async function main() {
 
         // 执行代币跨出操作
         contract.on("Deposit", async (toChainId, fromToken, toToken, recipient, value, event) => {
+            value = value.toString() * 1
             toChainId = toChainId.toString()
             const lock = await getChainLock(item.chainId)
             const numberNow = event.blockNumber
@@ -780,12 +828,13 @@ async function main() {
                 await setChainLock(item.chainId, numberNow.toString())
                 const isCheck = await getIsCheck()
                 // 检查配置的审核状态
-                if (!isCheck || value <= pair['limit']) {
+                if (!isCheck || pair['limit'] === 0 || value <= pair['limit']) {
                     const manager = managerContracts[toChainId]
                     if (manager) {
                         const fee = Math.ceil(value * pair['bridgeFee'] / 100)
-                        const final =  ethers.utils.parseUnits((value - fee).toString(),pair['decimal'])
-                        manager['withdraw'](item.chainId, fromToken, recipient, final)
+                        const final = ethers.utils.parseUnits((value - fee).toString(), pair['decimal'])
+                        // console.log(item.chainId, fromToken, recipient, final.toString(), event.transactionHash)
+                        manager['withdraw'](item.chainId, fromToken, recipient, final, event.transactionHash)
                     }
                 }
             }

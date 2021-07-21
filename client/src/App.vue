@@ -198,6 +198,7 @@
             ], signer)
             const value = ethers.utils.parseUnits(state.bridgeNumber.toString(), state.target.decimal)
             const allowance = await token.allowance(state.account, state.bridge)
+            console.log(allowance.toString())
             if (allowance.toString() * 1 < value.toString() * 1) {
                 try {
                     const approve = await token.approve(state.bridge, ethers.utils.parseUnits("10000000000000", state.target.decimal))
@@ -245,6 +246,7 @@
 
 <style>
     body {
+        font-family: "ubuntu","Microsoft YaHei UI Light",sans-serif !important;
         background: #f7f8fa;
     }
 

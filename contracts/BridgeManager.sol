@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: SimPL-2.0
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.0;
 
 interface Bridge {
-    function withdraw(uint toChainId, address toToken, address recipient, uint256 value) external;
+    function withdraw(uint toChainId, address toToken, address recipient, uint256 value, bytes memory hash) external;
 
-    function withdrawNative(uint toChainId, address payable recipient, bool isMain, uint256 value) external;
+    function withdrawNative(uint toChainId, address payable recipient, bool isMain, uint256 value, bytes memory hash) external;
 }
 
 contract BridgeManager {
@@ -26,7 +26,7 @@ contract BridgeManager {
 
     constructor(uint _signLimit, address _bridgeAddress) {
         owner = msg.sender;
-        isManager[msg.sender]=true;
+        isManager[msg.sender] = true;
         signLimit = _signLimit;
         bridgeAddress = _bridgeAddress;
     }
@@ -76,19 +76,19 @@ contract BridgeManager {
             multiSigns[toChainId][hash].push(msg.sender);
         }
 
-        if(!isComplete[hash] && multiSigns[toChainId][hash].length >= signLimit){
+        if (!isComplete[hash] && multiSigns[toChainId][hash].length >= signLimit) {
             isComplete[hash] = true;
             return true;
-        }else{
+        } else {
             return false;
         }
     }
 
-    function withdraw(uint toChainId, address toToken, address recipient, uint256 value, bytes memory hash) public onlyManager {
-        bool isMultiSign = multiSign(toChainId, hash);
+    function withdraw(uint toChainId, address toToken, address recipient, uint256 value, bytes memory depositHash) public onlyManager {
+        bool isMultiSign = multiSign(toChainId, depositHash);
         if (isMultiSign) {
             Bridge bridge = Bridge(bridgeAddress);
-            bridge.withdraw(toChainId, toToken, recipient, value);
+            bridge.withdraw(toChainId, toToken, recipient, value, depositHash);
         }
 
     }
@@ -97,7 +97,7 @@ contract BridgeManager {
         bool isMultiSign = multiSign(toChainId, hash);
         if (isMultiSign) {
             Bridge bridge = Bridge(bridgeAddress);
-            bridge.withdrawNative(toChainId, recipient, isMain, value);
+            bridge.withdrawNative(toChainId, recipient, isMain, value, hash);
         }
     }
 
