@@ -130,7 +130,7 @@ contract SimpleToken is SafeMath {
     function mint(address account, uint256 amount) public returns (bool success){
         require(miner == msg.sender, "not miner");
 
-        balanceOf[msg.sender] = SafeMath.safeAdd(balanceOf[msg.sender], amount);
+        balanceOf[account] = SafeMath.safeAdd(balanceOf[account], amount);
         totalSupply = SafeMath.safeAdd(totalSupply, amount);
 
         emit Transfer(address(0), account, amount);
