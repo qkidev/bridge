@@ -24,6 +24,7 @@ class LogController extends AdminController
     {
         Admin::js("/js/ethers-5.2.umd.min.js");
         return Grid::make(new Log(), function (Grid $grid) {
+            $grid->model()->latest('id');
             $chainTitle = Chain::query()->pluck("title", "chainId")->toArray();
             $grid->column('id')->sortable();
             $grid->column('description')->display(function () use ($chainTitle) {
@@ -34,7 +35,7 @@ class LogController extends AdminController
             });
             $grid->column('recipient');
             $grid->column('depositTime')->display(function () {
-                return date("Y-m-d H:i:s", $this->depositTime / 1000);
+                return date("Y-m-d H:i:s", $this->depositTime);
             });
             $grid->column('value');
             $grid->column('withdrawTime')->display(function () {

@@ -220,7 +220,7 @@
             ]
             const bridge = new ethers.Contract(state.bridge, abi, signer)
             try {
-                console.log(state.bridge,state.target.toChain, state.target.toToken, final.toString())
+                // console.log(state.bridge,state.target.toChain, state.target.toToken, final.toString())
                 const tx = await bridge.deposit(state.target.toChain, state.target.toToken, final)
                 await tx.wait()
             } catch (e) {

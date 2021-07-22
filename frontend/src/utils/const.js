@@ -656,4 +656,4 @@ export const BRIDGE_ABI = [
 	}
 ]
 
-export const BASE_URL = process.env.NODE_ENV == 'development' ? 'http://bridge-admin.siru.com/api/' : "http://bridge-admin.siru.com/api/";
+export const BASE_URL = process.env.NODE_ENV == 'development' ? 'http://148.70.33.227:9580/api/' : "http://148.70.33.227:9580/api/";
