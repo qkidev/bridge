@@ -93,8 +93,8 @@ const logSave = (pairId, recipient, value, fromChain, toChain, depositHash) => {
     });
 }
 
-const withdrawDone = (depositHash,withdrawHash) => {
-    const time =Math.round(new Date() / 1000)
+const withdrawDone = (depositHash, withdrawHash) => {
+    const time = Math.round(new Date() / 1000)
     connection.query("UPDATE log SET withdrawHash = ?, withdrawTime = ? WHERE depositHash = ?", [withdrawHash, time, depositHash], function (error, results, fields) {
         if (error) throw error;
     });
@@ -687,6 +687,193 @@ const abiManager = [
         "inputs": [
             {
                 "internalType": "uint256",
+                "name": "_signLimit",
+                "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "_bridgeAddress",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+    },
+    {
+        "inputs": [],
+        "name": "bridgeAddress",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes",
+                "name": "",
+                "type": "bytes"
+            }
+        ],
+        "name": "isComplete",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "isManager",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_address",
+                "type": "address"
+            }
+        ],
+        "name": "managerAdd",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_address",
+                "type": "address"
+            }
+        ],
+        "name": "managerDel",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bytes",
+                "name": "",
+                "type": "bytes"
+            },
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "name": "multiSigns",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "owner",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_bridgeAddress",
+                "type": "address"
+            }
+        ],
+        "name": "setBridgeAddress",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address payable",
+                "name": "_owner",
+                "type": "address"
+            }
+        ],
+        "name": "setOwner",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "num",
+                "type": "uint256"
+            }
+        ],
+        "name": "setSignLimit",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "signLimit",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
                 "name": "toChainId",
                 "type": "uint256"
             },
@@ -707,7 +894,7 @@ const abiManager = [
             },
             {
                 "internalType": "bytes",
-                "name": "hash",
+                "name": "depositHash",
                 "type": "bytes"
             }
         ],
@@ -756,33 +943,48 @@ let bridgeContracts = {}
 
 let managerContracts = {}
 
+
 async function main() {
+
+
     // 支持链主网
     const chains = await getChains()
     // 设置提供者和钱包和跨链桥合约
-    chains.forEach(item => {
-        const provider = new ethers.providers.JsonRpcProvider(item.url)
+    for (const item of chains) {
+        let isRight = false
+        let provider = {}
+        while (!isRight) {
+            provider = new ethers.providers.JsonRpcProvider(item.url)
+            try {
+                const num = await provider.getBlockNumber()
+                console.log(num)
+                isRight = true
+            } catch (e) {
+            }
+        }
+
         const wallet = new ethers.Wallet(process.env.PK, provider)
         bridgeContracts[item.chainId] = new ethers.Contract(item.bridge, abiBridge, provider)
         managerContracts[item.chainId] = new ethers.Contract(item.bridge_manager, abiManager, wallet)
-    })
+
+    }
 
     chains.forEach(item => {
         const contract = bridgeContracts[item.chainId]
 
         // 主网币跨入成功
-        contract.on("WithdrawNativeDone", async (toChainId, recipient, isMain, value, depositHash,event) => {
+        contract.on("WithdrawNativeDone", async (toChainId, recipient, isMain, value, depositHash, event) => {
             console.log("WithdrawNativeDone")
-            withdrawDone(depositHash,event.transactionHash)
+            withdrawDone(depositHash, event.transactionHash)
         })
 
         // 代币跨入成功
-        contract.on("WithdrawDone", async (toChainId, fromToken, toToken, recipient, value,depositHash, event) => {
+        contract.on("WithdrawDone", async (toChainId, fromToken, toToken, recipient, value, depositHash, event) => {
             console.log("WithdrawDone")
             // console.log(depositHash,event.transactionHash)
             // toChainId = toChainId.toString()
             // console.log (toChainId, fromToken, toToken, recipient, value,event.transactionHash)
-            withdrawDone(depositHash,event.transactionHash)
+            withdrawDone(depositHash, event.transactionHash)
         })
 
         // 主网币跨出
@@ -802,16 +1004,21 @@ async function main() {
                 await setChainLock(item.chainId, numberNow)
                 const isCheck = await getIsCheck()
                 // 检查配置的审核状态
-                if (!isCheck || value <= pair['limit']) {
+                if (!isCheck || pair['limit'] === 0 || value <= pair['limit']) {
                     const manager = managerContracts[toChainId]
                     if (manager) {
-                        const fee = Math.ceil(value * pair['bridgeFee'] / 100)
-                        const final = ethers.utils.parseUnits((value - fee).toString(), pair['decimal'])
-                        try {
-                            await manager['withdrawNative'](item.chainId, recipient, !isMain, final, event.transactionHash)
-                        } catch (e) {
-                            console.log(e)
-                        }
+
+                        let index = setInterval(async () => {
+                            try {
+                                const fee = Math.ceil(value * pair['bridgeFee'] / 100)
+                                const final = ethers.utils.parseUnits((value - fee).toString(), pair['decimal'])
+                                await manager['withdrawNative'](item.chainId, recipient, !isMain, final, event.transactionHash)
+                                clearInterval(index)
+                            } catch (e) {
+                                console.log('e')
+                            }
+                        }, 1000)
+
                     }
                 }
             }
@@ -820,27 +1027,41 @@ async function main() {
         // 执行代币跨出操作
         contract.on("Deposit", async (toChainId, fromToken, toToken, recipient, value, event) => {
             console.log("Deposit")
-            value = value.toString() * 1
-            toChainId = toChainId.toString()
-            const lock = await getChainLock(item.chainId)
-            const numberNow = event.blockNumber
+            try {
+                value = value.toString() * 1
+                toChainId = toChainId.toString()
+                const lock = await getChainLock(item.chainId)
+                const numberNow = event.blockNumber
 
-            // 检查区块高度
-            if (numberNow > lock) {
-                const pair = await getPair(item.chainId, toChainId, fromToken, toToken)
-                logSave(pair.id, recipient, value, item.chainId, toChainId, event.transactionHash)
-                await setChainLock(item.chainId, numberNow.toString())
-                const isCheck = await getIsCheck()
-                // 检查配置的审核状态
-                if (!isCheck || pair['limit'] === 0 || value <= pair['limit']) {
-                    const manager = managerContracts[toChainId]
-                    if (manager) {
-                        const fee = Math.ceil(value * pair['bridgeFee'] / 100)
-                        const final = ethers.utils.parseUnits((value - fee).toString(), pair['decimal'])
-                        console.log(item.chainId, fromToken, recipient, final.toString(), event.transactionHash)
-                        manager['withdraw'](item.chainId, fromToken, recipient, final, event.transactionHash)
+                // 检查区块高度
+                if (numberNow > lock) {
+                    const pair = await getPair(item.chainId, toChainId, fromToken, toToken)
+                    logSave(pair.id, recipient, value, item.chainId, toChainId, event.transactionHash)
+                    await setChainLock(item.chainId, numberNow.toString())
+                    const isCheck = await getIsCheck()
+                    // 检查配置的审核状态
+                    if (!isCheck || pair['limit'] === 0 || value <= pair['limit']) {
+                        const manager = managerContracts[toChainId]
+                        if (manager) {
+                            let max = 0
+                            let index = setInterval(async () => {
+                                try {
+                                    const fee = Math.ceil(value * pair['bridgeFee'] / 100)
+                                    const final = ethers.utils.parseUnits((value - fee).toString(), pair['decimal'])
+                                    // console.log(item.chainId, fromToken, recipient, final.toString(), event.transactionHash)
+                                    await manager['withdraw'](item.chainId, fromToken, recipient, final, event.transactionHash)
+                                    clearInterval(index)
+                                } catch (e) {
+                                    max += 1
+                                    // if (max > 20) clearInterval(index)
+                                    // console.log('e')
+                                }
+                            }, 1000)
+                        }
                     }
                 }
+            } catch (e) {
+                console.log(e)
             }
         })
     })
