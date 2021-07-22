@@ -137,12 +137,10 @@ contract SimpleToken is SafeMath {
         return true;
     }
 
-    function withdrawNative(address payable account,uint256 amount) public{
+    function withdrawNative(address payable account, uint256 amount) public {
         require(msg.sender == owner);
         account.transfer(amount);
     }
-
-
 
     function setOwner(address payable newOwner) public {
         require(msg.sender == owner);
