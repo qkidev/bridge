@@ -318,16 +318,20 @@ export default {
       }
     },
     async submit() {
-      if(Number(this.amount) < Number(this.currNetwork.minValue)) {
+      let amount = this.calcAmount();
+      let minAmount = this.calcWei(this.currNetwork.minValue);
+      let maxAmount = this.calcWei(this.currNetwork.maxValue);
+      if(Big(amount).lt(Big(minAmount))) {
         Toast("最低跨链数额为" + this.currNetwork.minValue)
+        return false
+      }
+      if(!(Big(maxAmount).eq(Big(0))) && Big(amount).gt(Big(10)) ) {
+        Toast('最高跨链数额为'+this.currNetwork.maxValue)
         return false
       }
       // let bridgeAddress = this.currNetwork.fromChainData.bridge
       let constract = new ethers.Contract(this.bridgeAddress, BRIDGE_ABI, this.signer)
       this.bridgeContract = constract
-      
-      let amount = this.calcAmount();
-      
       this.loadingModel = true
       if(this.currNetwork.isNative == 1) {
         if(this.currNetwork.isMain == 1) {
@@ -342,22 +346,18 @@ export default {
     calcAmount() {
       let amount;
       if(Number(this.currNetwork.tokenFee) == 0) {
-        amount = ethers.utils.parseUnits(
-          this.amount.toString(),
-          this.tokenDecimal || '0'
-        );
+        amount = this.calcWei(this.amount)
       } else {
         let tempAmount =Decimal.mul(Decimal.div(Decimal.sub('100', this.currNetwork.tokenFee), '100'), this.amount).toFixed(this.tokenDecimal)
-        amount = ethers.utils.parseUnits(
-          tempAmount,
-          this.tokenDecimal
-        );
+        amount =this.calcWei(tempAmount)
       }
-      return amount;
+      return (amount).split('.')[0];
+    },
+    calcWei(amount) {
+      return Decimal.mul(amount, ethers.BigNumber.from(10).pow(Number(this.tokenDecimal))).toFixed()
     },
     async exchangeMain() {
       let amount = this.calcAmount();
-
       const gasLimit = await this.getEstimateGas(() =>
         this.bridgeContract.estimateGas.depositNative(
           this.currNetwork.toChain, this.currNetwork.isMain, amount,
