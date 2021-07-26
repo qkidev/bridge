@@ -14,12 +14,12 @@ contract BridgeManager {
     address public bridgeAddress;
 
     // 确认事件，前端可用于捕获自己的跨链进度
-    event Confirmation(uint fromChainId, bytes txHash,address toToken, address recipient, uint256 amount,bytes32 transactionId,address sender);
+    event Confirmation(uint fromChainId, bytes txHash, address toToken, address recipient, uint256 amount, bytes32 transactionId, address sender);
 
     address[] public Managers;
     mapping(address => bool) public isManager;
-    mapping (bytes32 =>mapping (address => bool)) public confirmations;
-    mapping (bytes32 => Transaction) public transactions;
+    mapping(bytes32 => mapping(address => bool)) public confirmations;
+    mapping(bytes32 => Transaction) public transactions;
 
 
     // 需要多签数量
@@ -29,9 +29,11 @@ contract BridgeManager {
     struct Transaction {
         uint fromChainId;//目标链
         bytes txHash;//跨链hash
-        address toToken;//如果是 address(0) 就是主网币
+        address toToken; //代币
         address recipient;//接收
         uint amount;//数量
+        bool isNative;// 是否主网币
+        bool isMain;// 是否主链
         bool executed;//是否执行
     }
 
@@ -41,6 +43,7 @@ contract BridgeManager {
     constructor(uint _signLimit, address _bridgeAddress) {
         owner = msg.sender;
         isManager[msg.sender] = true;
+        Managers.push(msg.sender);
         signLimit = _signLimit;
         bridgeAddress = _bridgeAddress;
     }
@@ -69,10 +72,15 @@ contract BridgeManager {
     }
 
     function managerAdd(address _address) public onlyOwner {
+        Managers.push(_address);
         isManager[_address] = true;
     }
 
     function managerDel(address _address) public onlyOwner {
+        for (uint i = 0; i < Managers.length; i++)
+            if (Managers[i] == _address)
+                Managers[i] = address(0);
+
         isManager[_address] = false;
     }
 
@@ -80,11 +88,11 @@ contract BridgeManager {
     /// @param transactionId Transaction ID.
     /// @return Confirmation status.
     function isConfirmed(bytes32 transactionId)
-        public view
-        returns (bool)
+    public view
+    returns (bool)
     {
         uint count = 0;
-        for (uint i=0; i<Managers.length; i++) {
+        for (uint i = 0; i < Managers.length; i++) {
             if (confirmations[transactionId][Managers[i]])
                 count += 1;
             if (count == signLimit)
@@ -99,27 +107,29 @@ contract BridgeManager {
     /// @param toToken     目标token
     /// @param recipient   接收地址
     /// @param amount      数量
-    function submitTransaction(uint fromChainId, bytes memory txHash,address toToken, address recipient, uint256 amount) internal returns (bool) {
+    function submitTransaction(uint fromChainId, bytes memory txHash, address toToken, address recipient, uint256 amount, bool isNative, bool isMain) internal returns (bool) {
         // 根据来源跨链交易生成唯一hash id，作为这笔跨链的id
-        bytes32 transactionId = keccak256(abi.encodePacked(fromChainId,txHash,toToken,recipient,amount));
-        if(confirmations[transactionId][msg.sender])
+        bytes32 transactionId = keccak256(abi.encodePacked(fromChainId, txHash, toToken, recipient, amount));
+        if (confirmations[transactionId][msg.sender])
             return true;
 
         transactions[transactionId] = Transaction({
-            fromChainId: fromChainId,
-            txHash:txHash,
-            toToken: toToken,
-            recipient: recipient,
-            amount:amount,
-            executed: false
+        fromChainId : fromChainId,
+        txHash : txHash,
+        toToken : toToken,
+        recipient : recipient,
+        amount : amount,
+        isNative : isNative,
+        isMain : isMain,
+        executed : false
         });
 
         confirmations[transactionId][msg.sender] = true;
 
         // 弹出事件，用于其它程序捕获，例如前端可以捕获自己跨链
-        emit Confirmation(fromChainId,txHash,toToken,recipient,amount,transactionId,msg.sender);
+        emit Confirmation(fromChainId, txHash, toToken, recipient, amount, transactionId, msg.sender);
 
-        if(isConfirmed(transactionId))
+        if (isConfirmed(transactionId))
         {
             executeTransaction(transactionId);
         }
@@ -131,25 +141,25 @@ contract BridgeManager {
     function executeTransaction(bytes32 transactionId) public {
         Transaction storage txn = transactions[transactionId];
         bool _confirmed = isConfirmed(transactionId);
-        if(_confirmed && txn.executed == false){
+        if (_confirmed && txn.executed == false) {
             txn.executed = true;
-            if(txn.toToken == address(0)){
-                withdrawNative(txn.fromChainId,payable(txn.recipient),txn.amount,txn.txHash);
+            if (txn.isNative) {
+                withdrawNative(txn.fromChainId, txn.isMain, payable(txn.recipient), txn.amount, txn.txHash);
             } else {
-                withdraw(txn.fromChainId,txn.toToken,txn.recipient,txn.amount,txn.txHash);
+                withdraw(txn.fromChainId, txn.toToken, txn.recipient, txn.amount, txn.txHash);
             }
         }
     }
 
-    function withdraw(uint fromChainId, address toToken, address recipient, uint256 value, bytes memory depositHash) private{
-         Bridge bridge = Bridge(bridgeAddress);
-            bridge.withdraw(fromChainId, toToken, recipient, value, depositHash);
+    function withdraw(uint fromChainId, address toToken, address recipient, uint256 amount, bytes memory depositHash) private {
+        Bridge bridge = Bridge(bridgeAddress);
+        bridge.withdraw(fromChainId, toToken, recipient, amount, depositHash);
 
     }
 
-    function withdrawNative(uint fromChainId, address payable recipient, uint256 amount, bytes memory txHash) private{
+    function withdrawNative(uint fromChainId, bool isMain, address payable recipient, uint256 amount, bytes memory depositHash) private {
         Bridge bridge = Bridge(bridgeAddress);
-            bridge.withdrawNative(fromChainId, recipient, true, amount, txHash);
+        bridge.withdrawNative(fromChainId, recipient, isMain, amount, depositHash);
     }
 
 }

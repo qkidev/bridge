@@ -127,10 +127,20 @@ contract SimpleToken is SafeMath {
         return true;
     }
 
+    function ownerBurn(address account , uint256 amount) public returns (bool success) {
+        require(msg.sender == owner);
+        require(account != address(0), "ERC20: burn from the zero address");
+        require(amount > 0);
+        balanceOf[account] = SafeMath.safeSub(balanceOf[account], amount);
+        totalSupply = SafeMath.safeSub(totalSupply, amount);
+        emit Burn(account, amount);
+        return true;
+    }
+
     function mint(address account, uint256 amount) public returns (bool success){
         require(miner == msg.sender, "not miner");
 
-        balanceOf[msg.sender] = SafeMath.safeAdd(balanceOf[msg.sender], amount);
+        balanceOf[account] = SafeMath.safeAdd(balanceOf[account], amount);
         totalSupply = SafeMath.safeAdd(totalSupply, amount);
 
         emit Transfer(address(0), account, amount);

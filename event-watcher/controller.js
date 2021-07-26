@@ -73,6 +73,18 @@ const getPair = (fromChain, toChain, fromToken, toToken) => {
     })
 }
 
+const getLog = (hash) => {
+    return new Promise((resolve, reject) => {
+        connection.query('SELECT * FROM `log` WHERE `depositHash` = ?', [hash], (err, res, fields) => {
+            if (err) {
+                return reject(err)
+            } else {
+                return resolve(res[0])
+            }
+        })
+    })
+}
+
 const getPairNative = (fromChainId, toChainId, isMain) => {
     return new Promise((resolve, reject) => {
         connection.query('SELECT * FROM `pair` WHERE `fromChain` = ? AND `toChain` = ? AND `isMain` = ? AND `isNative` = 1', [fromChainId, toChainId, isMain], (err, res, fields) => {
@@ -360,7 +372,7 @@ const abiBridge = [
             },
             {
                 "internalType": "address",
-                "name": "fromToken",
+                "name": "fromAddress",
                 "type": "address"
             }
         ],
@@ -700,6 +712,74 @@ const abiManager = [
         "type": "constructor"
     },
     {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "fromChainId",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "bytes",
+                "name": "txHash",
+                "type": "bytes"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "toToken",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "recipient",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "bytes32",
+                "name": "transactionId",
+                "type": "bytes32"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "sender",
+                "type": "address"
+            }
+        ],
+        "name": "Confirmation",
+        "type": "event"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "name": "Managers",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
         "inputs": [],
         "name": "bridgeAddress",
         "outputs": [
@@ -715,12 +795,49 @@ const abiManager = [
     {
         "inputs": [
             {
-                "internalType": "bytes",
+                "internalType": "bytes32",
                 "name": "",
-                "type": "bytes"
+                "type": "bytes32"
+            },
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
             }
         ],
-        "name": "isComplete",
+        "name": "confirmations",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "transactionId",
+                "type": "bytes32"
+            }
+        ],
+        "name": "executeTransaction",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "transactionId",
+                "type": "bytes32"
+            }
+        ],
+        "name": "isConfirmed",
         "outputs": [
             {
                 "internalType": "bool",
@@ -874,8 +991,13 @@ const abiManager = [
         "inputs": [
             {
                 "internalType": "uint256",
-                "name": "toChainId",
+                "name": "fromChainId",
                 "type": "uint256"
+            },
+            {
+                "internalType": "bytes",
+                "name": "txHash",
+                "type": "bytes"
             },
             {
                 "internalType": "address",
@@ -889,31 +1011,70 @@ const abiManager = [
             },
             {
                 "internalType": "uint256",
-                "name": "value",
+                "name": "amount",
                 "type": "uint256"
             },
             {
-                "internalType": "bytes",
-                "name": "depositHash",
-                "type": "bytes"
+                "internalType": "bool",
+                "name": "isNative",
+                "type": "bool"
+            },
+            {
+                "internalType": "bool",
+                "name": "isMain",
+                "type": "bool"
             }
         ],
-        "name": "withdraw",
-        "outputs": [],
+        "name": "submitTransaction",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
         "stateMutability": "nonpayable",
         "type": "function"
     },
     {
         "inputs": [
             {
+                "internalType": "bytes32",
+                "name": "",
+                "type": "bytes32"
+            }
+        ],
+        "name": "transactions",
+        "outputs": [
+            {
                 "internalType": "uint256",
-                "name": "toChainId",
+                "name": "fromChainId",
                 "type": "uint256"
             },
             {
-                "internalType": "address payable",
+                "internalType": "bytes",
+                "name": "txHash",
+                "type": "bytes"
+            },
+            {
+                "internalType": "address",
+                "name": "toToken",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
                 "name": "recipient",
                 "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bool",
+                "name": "isNative",
+                "type": "bool"
             },
             {
                 "internalType": "bool",
@@ -921,19 +1082,12 @@ const abiManager = [
                 "type": "bool"
             },
             {
-                "internalType": "uint256",
-                "name": "value",
-                "type": "uint256"
-            },
-            {
-                "internalType": "bytes",
-                "name": "hash",
-                "type": "bytes"
+                "internalType": "bool",
+                "name": "executed",
+                "type": "bool"
             }
         ],
-        "name": "withdrawNative",
-        "outputs": [],
-        "stateMutability": "nonpayable",
+        "stateMutability": "view",
         "type": "function"
     }
 ]
@@ -992,33 +1146,37 @@ async function main() {
             console.log("DepositNative")
             toChainId = toChainId.toString()
             isMain = isMain ? 1 : 0
-            value = value.toString() * 1
-            const lock = await getChainLock(item.chainId)
-            const numberNow = event.blockNumber
-
-            // 检查链高度
-            if (numberNow > lock) {
-                const pair = await getPairNative(item.chainId, toChainId, isMain)
-                logSave(pair.id, recipient, value, item.chainId, toChainId, event.transactionHash)
-                console.log(`[主网币][跨链][成功] ${value} 个 ${pair.name} 从 ${pair.fromChain} 到 ${pair.toChain}`)
-                await setChainLock(item.chainId, numberNow)
+            const pair = await getPairNative(item.chainId, toChainId, isMain)
+            value = (value.toString() / 10 ** pair['decimal']).toFixed(pair['decimal'])
+            const max = pair.maxValue || 100000000000
+            if (value >= pair.minValue && value <= max) {
+                const log = await getLog(event.transactionHash)
+                if (typeof (log) === "undefined") {
+                    logSave(pair.id, recipient, value, item.chainId, toChainId, event.transactionHash)
+                    // console.log(`[主网币][跨链][成功] ${value} 个 ${pair.name} 从 ${pair.fromChain} 到 ${pair.toChain}`)
+                }
                 const isCheck = await getIsCheck()
                 // 检查配置的审核状态
                 if (!isCheck || pair['limit'] === 0 || value <= pair['limit']) {
                     const manager = managerContracts[toChainId]
                     if (manager) {
-
-                        let index = setInterval(async () => {
+                        let isSuccess = false
+                        let tryNum = 0
+                        while (!isSuccess) {
                             try {
-                                const fee = Math.ceil(value * pair['bridgeFee'] / 100)
-                                const final = ethers.utils.parseUnits((value - fee).toString(), pair['decimal'])
-                                await manager['withdrawNative'](item.chainId, recipient, !isMain, final, event.transactionHash)
-                                clearInterval(index)
+                                tryNum += 1
+                                const fee = (value * pair['bridgeFee'] / 100).toFixed(pair['decimal'])
+                                const amount = ethers.utils.parseUnits((value - fee).toFixed(pair['decimal']), pair['decimal'])
+                                // console.log(item.chainId, event.transactionHash, "0x0000000000000000000000000000000000000000", recipient, amount, true, !isMain)
+                                await manager['submitTransaction'](item.chainId, event.transactionHash, "0x0000000000000000000000000000000000000000", recipient, amount, true, !isMain, {
+                                    gasPrice: ethers.utils.parseUnits('10', 'gwei')
+                                })
+                                isSuccess = true
                             } catch (e) {
-                                console.log('e')
+                                console.log(tryNum)
+                                if (tryNum > 100000) isSuccess = true
                             }
-                        }, 1000)
-
+                        }
                     }
                 }
             }
@@ -1028,35 +1186,39 @@ async function main() {
         contract.on("Deposit", async (toChainId, fromToken, toToken, recipient, value, event) => {
             console.log("Deposit")
             try {
-                value = value.toString() * 1
                 toChainId = toChainId.toString()
-                const lock = await getChainLock(item.chainId)
-                const numberNow = event.blockNumber
-
-                // 检查区块高度
-                if (numberNow > lock) {
-                    const pair = await getPair(item.chainId, toChainId, fromToken, toToken)
-                    logSave(pair.id, recipient, value, item.chainId, toChainId, event.transactionHash)
-                    await setChainLock(item.chainId, numberNow.toString())
+                const pair = await getPair(item.chainId, toChainId, fromToken, toToken)
+                value = (value.toString() / 10 ** pair['decimal']).toFixed(pair['decimal'])
+                const max = pair.maxValue || 100000000000
+                if (value >= pair.minValue && value <= max) {
+                    const log = await getLog(event.transactionHash)
+                    if (typeof (log) === "undefined") {
+                        logSave(pair.id, recipient, value, item.chainId, toChainId, event.transactionHash)
+                    }
                     const isCheck = await getIsCheck()
                     // 检查配置的审核状态
                     if (!isCheck || pair['limit'] === 0 || value <= pair['limit']) {
                         const manager = managerContracts[toChainId]
                         if (manager) {
-                            let max = 0
-                            let index = setInterval(async () => {
+                            let isSuccess = false
+                            let tryNum = 0
+                            while (!isSuccess) {
                                 try {
-                                    const fee = Math.ceil(value * pair['bridgeFee'] / 100)
-                                    const final = ethers.utils.parseUnits((value - fee).toString(), pair['decimal'])
-                                    // console.log(item.chainId, fromToken, recipient, final.toString(), event.transactionHash)
-                                    await manager['withdraw'](item.chainId, fromToken, recipient, final, event.transactionHash)
-                                    clearInterval(index)
+                                    tryNum += 1
+                                    const fee = (value * pair['bridgeFee'] / 100).toFixed(pair['decimal'])
+                                    const amount = ethers.utils.parseUnits((value - fee).toFixed(pair['decimal']), pair['decimal'])
+                                    // console.log(item.chainId, event.transactionHash, fromToken, recipient, amount,false,!pair['isMain'])
+                                    const tx = await manager['submitTransaction'](item.chainId, event.transactionHash, fromToken, recipient, amount, false, !pair['isMain'], {
+                                        gasPrice: ethers.utils.parseUnits('10', 'gwei')
+                                    })
+                                    // console.log(event.transactionHash, tx.hash)
+                                    isSuccess = true
                                 } catch (e) {
-                                    max += 1
-                                    // if (max > 20) clearInterval(index)
-                                    // console.log('e')
+                                    // console.log(e)
+                                    console.log(tryNum)
+                                    if (tryNum > 100000) isSuccess = true
                                 }
-                            }, 1000)
+                            }
                         }
                     }
                 }

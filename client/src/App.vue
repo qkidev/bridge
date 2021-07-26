@@ -49,14 +49,14 @@
 
 </template>
 
-<!--https://chainid.network/-->
+<!--https://chainlist.org -->
 <script setup>
     import {ethers} from 'ethers'
     import {Toast} from 'vant'
 
     import {reactive, onMounted, ref} from "vue";
 
-    const baseUri = "http://148.70.33.227:9580/" // http://127.0.0.1:8000/
+    const baseUri = "http://127.0.0.1:8000/" // http://127.0.0.1:8000/ http://148.70.33.227:9580/
 
     let provider = ref({})
     let signer = ref({})
@@ -129,7 +129,7 @@
     }
 
     const getTargets = (chain) => {
-        fetch(baseUri +'api/pairs')
+        fetch(baseUri + 'api/pairs')
             .then(function (response) {
                 return response.json();
             })
@@ -164,8 +164,7 @@
             if (state.target.isMain) {
                 try {
                     const tx = await bridge.depositNative(state.target.toChain, state.target.isMain, final, {
-                        gasLimit: 60000,
-                        gasPrice: ethers.utils.parseUnits('1', 'gwei'),
+                        gasPrice: ethers.utils.parseUnits('10', 'gwei'),
                         value: final,
                     })
                     await tx.wait()
@@ -188,7 +187,7 @@
                             return false
                         }
                     }
-                    const tx = await bridge.depositNative(state.target.toChain, !!state.target.isMain, final)
+                    const tx = await bridge.depositNative(state.target.toChain, 0, final)
                     await tx.wait()
                 } catch (e) {
                     console.log(e)
@@ -225,7 +224,7 @@
                 await tx.wait()
             } catch (e) {
                 console.log(e)
-                Toast( '跨链失败')
+                Toast('跨链失败')
                 return false
             }
         }
