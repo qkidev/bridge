@@ -372,7 +372,7 @@ const abiBridge = [
             },
             {
                 "internalType": "address",
-                "name": "fromToken",
+                "name": "fromAddress",
                 "type": "address"
             }
         ],
@@ -712,6 +712,74 @@ const abiManager = [
         "type": "constructor"
     },
     {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "fromChainId",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "bytes",
+                "name": "txHash",
+                "type": "bytes"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "toToken",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "recipient",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "bytes32",
+                "name": "transactionId",
+                "type": "bytes32"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "sender",
+                "type": "address"
+            }
+        ],
+        "name": "Confirmation",
+        "type": "event"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "name": "Managers",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
         "inputs": [],
         "name": "bridgeAddress",
         "outputs": [
@@ -727,12 +795,49 @@ const abiManager = [
     {
         "inputs": [
             {
-                "internalType": "bytes",
+                "internalType": "bytes32",
                 "name": "",
-                "type": "bytes"
+                "type": "bytes32"
+            },
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
             }
         ],
-        "name": "isComplete",
+        "name": "confirmations",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "transactionId",
+                "type": "bytes32"
+            }
+        ],
+        "name": "executeTransaction",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "transactionId",
+                "type": "bytes32"
+            }
+        ],
+        "name": "isConfirmed",
         "outputs": [
             {
                 "internalType": "bool",
@@ -886,8 +991,13 @@ const abiManager = [
         "inputs": [
             {
                 "internalType": "uint256",
-                "name": "toChainId",
+                "name": "fromChainId",
                 "type": "uint256"
+            },
+            {
+                "internalType": "bytes",
+                "name": "txHash",
+                "type": "bytes"
             },
             {
                 "internalType": "address",
@@ -901,31 +1011,70 @@ const abiManager = [
             },
             {
                 "internalType": "uint256",
-                "name": "value",
+                "name": "amount",
                 "type": "uint256"
             },
             {
-                "internalType": "bytes",
-                "name": "depositHash",
-                "type": "bytes"
+                "internalType": "bool",
+                "name": "isNative",
+                "type": "bool"
+            },
+            {
+                "internalType": "bool",
+                "name": "isMain",
+                "type": "bool"
             }
         ],
-        "name": "withdraw",
-        "outputs": [],
+        "name": "submitTransaction",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
         "stateMutability": "nonpayable",
         "type": "function"
     },
     {
         "inputs": [
             {
+                "internalType": "bytes32",
+                "name": "",
+                "type": "bytes32"
+            }
+        ],
+        "name": "transactions",
+        "outputs": [
+            {
                 "internalType": "uint256",
-                "name": "toChainId",
+                "name": "fromChainId",
                 "type": "uint256"
             },
             {
-                "internalType": "address payable",
+                "internalType": "bytes",
+                "name": "txHash",
+                "type": "bytes"
+            },
+            {
+                "internalType": "address",
+                "name": "toToken",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
                 "name": "recipient",
                 "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bool",
+                "name": "isNative",
+                "type": "bool"
             },
             {
                 "internalType": "bool",
@@ -933,19 +1082,12 @@ const abiManager = [
                 "type": "bool"
             },
             {
-                "internalType": "uint256",
-                "name": "value",
-                "type": "uint256"
-            },
-            {
-                "internalType": "bytes",
-                "name": "hash",
-                "type": "bytes"
+                "internalType": "bool",
+                "name": "executed",
+                "type": "bool"
             }
         ],
-        "name": "withdrawNative",
-        "outputs": [],
-        "stateMutability": "nonpayable",
+        "stateMutability": "view",
         "type": "function"
     }
 ]
@@ -1025,10 +1167,14 @@ async function main() {
                                 tryNum += 1
                                 const fee = (value * pair['bridgeFee'] / 100).toFixed(pair['decimal'])
                                 const amount = ethers.utils.parseUnits((value - fee).toFixed(pair['decimal']), pair['decimal'])
-                                await manager['submitTransaction'](item.chainId, event.transactionHash, "0x0000000000000000000000000000000000000000", recipient, amount)
+                                // console.log(item.chainId, event.transactionHash, "0x0000000000000000000000000000000000000000", recipient, amount, true, !isMain)
+                                await manager['submitTransaction'](item.chainId, event.transactionHash, "0x0000000000000000000000000000000000000000", recipient, amount, true, !isMain, {
+                                    gasPrice: ethers.utils.parseUnits('10', 'gwei')
+                                })
                                 isSuccess = true
                             } catch (e) {
-                                // console.log(e)
+                                console.log(tryNum)
+                                if (tryNum > 100000) isSuccess = true
                             }
                         }
                     }
@@ -1061,12 +1207,16 @@ async function main() {
                                     tryNum += 1
                                     const fee = (value * pair['bridgeFee'] / 100).toFixed(pair['decimal'])
                                     const amount = ethers.utils.parseUnits((value - fee).toFixed(pair['decimal']), pair['decimal'])
-                                    // console.log(item.chainId, fromToken, recipient, amount.toString(), event.transactionHash)
-                                    const tx = await manager['submitTransaction'](item.chainId, event.transactionHash, fromToken, recipient, amount)
-                                    console.log(event.transactionHash, tx.hash)
+                                    // console.log(item.chainId, event.transactionHash, fromToken, recipient, amount,false,!pair['isMain'])
+                                    const tx = await manager['submitTransaction'](item.chainId, event.transactionHash, fromToken, recipient, amount, false, !pair['isMain'], {
+                                        gasPrice: ethers.utils.parseUnits('10', 'gwei')
+                                    })
+                                    // console.log(event.transactionHash, tx.hash)
                                     isSuccess = true
                                 } catch (e) {
+                                    // console.log(e)
                                     console.log(tryNum)
+                                    if (tryNum > 100000) isSuccess = true
                                 }
                             }
                         }

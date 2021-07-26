@@ -29,9 +29,11 @@ contract BridgeManager {
     struct Transaction {
         uint fromChainId;//目标链
         bytes txHash;//跨链hash
-        address toToken;//如果是 address(0) 就是主网币
+        address toToken; //代币
         address recipient;//接收
         uint amount;//数量
+        bool isNative;// 是否主网币
+        bool isMain;// 是否主链
         bool executed;//是否执行
     }
 
@@ -76,7 +78,7 @@ contract BridgeManager {
 
     function managerDel(address _address) public onlyOwner {
         for (uint i = 0; i < Managers.length; i++)
-            if (Managers[i] ==_address)
+            if (Managers[i] == _address)
                 Managers[i] = address(0);
 
         isManager[_address] = false;
@@ -105,7 +107,7 @@ contract BridgeManager {
     /// @param toToken     目标token
     /// @param recipient   接收地址
     /// @param amount      数量
-    function submitTransaction(uint fromChainId, bytes memory txHash, address toToken, address recipient, uint256 amount) internal returns (bool) {
+    function submitTransaction(uint fromChainId, bytes memory txHash, address toToken, address recipient, uint256 amount, bool isNative, bool isMain) internal returns (bool) {
         // 根据来源跨链交易生成唯一hash id，作为这笔跨链的id
         bytes32 transactionId = keccak256(abi.encodePacked(fromChainId, txHash, toToken, recipient, amount));
         if (confirmations[transactionId][msg.sender])
@@ -117,6 +119,8 @@ contract BridgeManager {
         toToken : toToken,
         recipient : recipient,
         amount : amount,
+        isNative : isNative,
+        isMain : isMain,
         executed : false
         });
 
@@ -139,8 +143,8 @@ contract BridgeManager {
         bool _confirmed = isConfirmed(transactionId);
         if (_confirmed && txn.executed == false) {
             txn.executed = true;
-            if (txn.toToken == address(0)) {
-                withdrawNative(txn.fromChainId, payable(txn.recipient), txn.amount, txn.txHash);
+            if (txn.isNative) {
+                withdrawNative(txn.fromChainId, txn.isMain, payable(txn.recipient), txn.amount, txn.txHash);
             } else {
                 withdraw(txn.fromChainId, txn.toToken, txn.recipient, txn.amount, txn.txHash);
             }
@@ -153,9 +157,9 @@ contract BridgeManager {
 
     }
 
-    function withdrawNative(uint fromChainId, address payable recipient, uint256 amount, bytes memory txHash) private {
+    function withdrawNative(uint fromChainId, bool isMain, address payable recipient, uint256 amount, bytes memory depositHash) private {
         Bridge bridge = Bridge(bridgeAddress);
-        bridge.withdrawNative(fromChainId, recipient, true, amount, txHash);
+        bridge.withdrawNative(fromChainId, recipient, isMain, amount, depositHash);
     }
 
 }

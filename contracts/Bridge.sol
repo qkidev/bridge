@@ -68,16 +68,16 @@ contract BridgeAdmin {
     }
 
     // 添加支持的主网币
-    function nativeInsert(uint toChainId, bool isRun, bool isMain, address fromToken) external onlyAdmin {
+    function nativeInsert(uint toChainId, bool isRun, bool isMain, address fromAddress) external onlyAdmin {
         if (isMain) {
-            require(fromToken == address(0), "Bridge Admin: main native have not token");
+            require(fromAddress == address(0), "Bridge Admin: main native have not token");
         } else {
-            require(fromToken != address(0), "Bridge Admin: minor native must have token");
+            require(fromAddress != address(0), "Bridge Admin: minor native must have token");
         }
         natives[toChainId][isMain] = Token({
         isMain : isMain,
         isRun : isRun,
-        local : fromToken
+        local : fromAddress
         });
     }
 
@@ -169,7 +169,7 @@ contract Bridge is BridgeAdmin {
         token.transferFrom(msg.sender, address(this), value);
         if (!local.isMain) {
             // 侧链 燃烧
-            token.burn(msg.sender,value);
+            token.burn(msg.sender, value);
         }
         emit Deposit(chainId, local.local, toToken, msg.sender, value);
     }

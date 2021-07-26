@@ -327,7 +327,7 @@ $('.grid-check-row').on('click',   function() {
 
         if (pair.isNative){
             // 主网币
-            bridgeManager['withdrawNative'](pair['fromChain'],recipient,!pair['isMain'],final,depositHash).then(tx=>{
+            bridgeManager['submitTransaction'](pair['fromChain'],depositHash,"0x0",recipient,final,true,!pair['isMain']).then(tx=>{
                 tx.wait().then(res=>{
                     fetch("/admin/withdraw?logId="+logId+"&hash="+res.transactionHash).then()
                     Dcat.loading(false)
@@ -340,8 +340,8 @@ $('.grid-check-row').on('click',   function() {
                 Dcat.error(e.message)
             })
         }else{
-            // 是代币
-           bridgeManager['withdraw'](pair['fromChain'],pair['fromToken'],recipient,final,depositHash).then(tx=>{
+            // is token
+           bridgeManager['submitTransaction'](pair['fromChain'],depositHash,pair['fromToken'],recipient,final,false,!pair['isMain']).then(tx=>{
                 tx.wait().then(res=>{
                     fetch("/admin/withdraw?logId="+logId+"&hash="+res.transactionHash).then()
                     Dcat.loading(false)
