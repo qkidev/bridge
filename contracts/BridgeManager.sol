@@ -13,6 +13,9 @@ contract BridgeManager {
 
     address public bridgeAddress;
 
+    // 确认事件，前端可用于捕获自己的跨链进度
+    event Confirmation(uint fromChainId, bytes txHash,address toToken, address recipient, uint256 amount,bytes32 transactionId,address sender);
+
     address[] public Managers;
     mapping(address => bool) public isManager;
     mapping (bytes32 =>mapping (address => bool)) public confirmations;
@@ -90,7 +93,6 @@ contract BridgeManager {
         return false;
     }
 
-
     /// @dev 提交一个跨链请求
     /// @param fromChainId 来源链id
     /// @param txHash      来源链交易hash
@@ -98,6 +100,7 @@ contract BridgeManager {
     /// @param recipient   接收地址
     /// @param amount      数量
     function submitTransaction(uint fromChainId, bytes memory txHash,address toToken, address recipient, uint256 amount) internal returns (bool) {
+        // 根据来源跨链交易生成唯一hash id，作为这笔跨链的id
         bytes32 transactionId = keccak256(abi.encodePacked(fromChainId,txHash,toToken,recipient,amount));
         if(confirmations[transactionId][msg.sender])
             return true;
@@ -113,10 +116,14 @@ contract BridgeManager {
 
         confirmations[transactionId][msg.sender] = true;
 
+        // 弹出事件，用于其它程序捕获，例如前端可以捕获自己跨链
+        emit Confirmation(fromChainId,txHash,toToken,recipient,amount,transactionId,msg.sender);
+
         if(isConfirmed(transactionId))
         {
             executeTransaction(transactionId);
         }
+        return true;
     }
 
 
