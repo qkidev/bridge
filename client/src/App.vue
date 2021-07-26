@@ -49,7 +49,7 @@
 
 </template>
 
-<!--https://chainid.network/-->
+<!--https://chainlist.org -->
 <script setup>
     import {ethers} from 'ethers'
     import {Toast} from 'vant'

@@ -17,7 +17,7 @@ interface IERC20 {
 
     function mint(address account, uint256 amount) external;
 
-    function burn(uint256 _value) external returns (bool success);
+    function burn(address account, uint256 amount) external;
 
     event Transfer(address indexed from, address indexed to, uint256 value);
 
@@ -169,7 +169,7 @@ contract Bridge is BridgeAdmin {
         token.transferFrom(msg.sender, address(this), value);
         if (!local.isMain) {
             // 侧链 燃烧
-            token.burn(value);
+            token.burn(msg.sender,value);
         }
         emit Deposit(chainId, local.local, toToken, msg.sender, value);
     }
