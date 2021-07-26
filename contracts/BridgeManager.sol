@@ -131,7 +131,7 @@ contract BridgeManager {
     function executeTransaction(bytes32 transactionId) public {
         Transaction storage txn = transactions[transactionId];
         bool _confirmed = isConfirmed(transactionId);
-        if(_confirmed){
+        if(_confirmed && txn.executed == false){
             txn.executed = true;
             if(txn.toToken == address(0)){
                 withdrawNative(txn.fromChainId,payable(txn.recipient),txn.amount,txn.txHash);
