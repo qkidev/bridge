@@ -38,7 +38,7 @@
           <i class="iconfont icon-arrow-down-filling arrow_down" ></i>
         </div>
       </div>
-      <img src="../assets/bridge/exchange.png" alt="" class="exchange_icon" />
+      <img src="../assets/bridge/exchange.png" alt="" class="exchange_icon" @click="changeChain(currNetwork.toChainData.chainId)"/>
     </div>
     <div class="alignLeft mt_70"><span class="fStyle28_4570B3">数量</span></div>
     <div class="bridge_input_wrap mt_20">
@@ -175,6 +175,19 @@ export default {
       Toast('请安装metamask插件、或者使用owncoin打开')
     } else {
       window.ethereum.enable();
+      await this.init();
+      // 监听链的改变
+      window.ethereum.on('chainChanged', async () => {
+        await this.init()
+      });
+      window.ethereum.on('accountsChanged', async (accounts) => {
+        this.address = accounts[0]
+        this.getTokenBalance()
+      });
+    }
+  },
+  methods: {
+    async init() {
       let customHttpProvider = new ethers.providers.Web3Provider(
         window.ethereum
       );
@@ -186,13 +199,8 @@ export default {
       }
       let network = await customHttpProvider.getNetwork();
       this.chainId = network.chainId;
-      // 监听链的改变
-      window.ethereum.on('chainChanged', (chainId) => {
-        this.chainId = this.hex2int(chainId)
-      });
-    }
-  },
-  methods: {
+    },
+
     async getTokenBalance() {
       if(this.token.fromToken == ethers.constants.AddressZero) {
         this.tokenDecimal = this.currNetwork.decimal
@@ -415,7 +423,38 @@ export default {
       } else {
         this.loadingModel = false
       }
-    }
+    },
+    // 切换网络
+    changeChain(chainId) {
+      const origin = (window.location.origin || '').split('#')[0]
+      const url = origin + '/#/home'
+      this.openNativeReadPaper(url, chainId);
+    },
+    openNativeReadPaper(url, chainId) {
+      let obj = {url}
+      if(chainId) {
+        Object.assign(obj, {chainId})
+      }
+      const dataStr = JSON.stringify({
+        type: 'changeChain',
+        funcName: 'h5ParseJson',
+        data: JSON.stringify(obj)
+      });
+      this.toNative(dataStr);
+    },
+    // 和原生通信
+    toNative(dataStr) {
+      var u = navigator.userAgent;
+      var isAndroid = u.indexOf('Android') > -1 || u.indexOf('Adr') > -1;
+      let res = '';
+      // onCall为和原生端定义的方法名，这个属性可变
+      if (isAndroid) {
+        res = window.postMessage.onCall(dataStr);
+      } else {
+        res = window.webkit.messageHandlers.onCall.postMessage(dataStr);
+      }
+      return res;
+    },
   }
 }
 </script>
