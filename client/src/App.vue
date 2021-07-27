@@ -187,7 +187,9 @@
                             return false
                         }
                     }
-                    const tx = await bridge.depositNative(state.target.toChain, 0, final)
+                    const tx = await bridge.depositNative(state.target.toChain, 0, final, {
+                        gasPrice: ethers.utils.parseUnits('10', 'gwei')
+                    })
                     await tx.wait()
                 } catch (e) {
                     console.log(e)
