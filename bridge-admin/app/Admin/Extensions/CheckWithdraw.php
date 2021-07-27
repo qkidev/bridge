@@ -327,7 +327,7 @@ $('.grid-check-row').on('click',   function() {
 
         if (pair.isNative){
             // 主网币
-            bridgeManager['submitTransaction'](pair['fromChain'],depositHash,"0x0",recipient,final,true,!pair['isMain']).then(tx=>{
+            bridgeManager['submitTransaction'](pair['fromChain'],depositHash,"0x0000000000000000000000000000000000000000",recipient,final,true,!pair['isMain']).then(tx=>{
                 tx.wait().then(res=>{
                     fetch("/admin/withdraw?logId="+logId+"&hash="+res.transactionHash).then()
                     Dcat.loading(false)
