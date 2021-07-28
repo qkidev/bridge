@@ -1,6 +1,8 @@
-pragma solidity =0.6.6;
+// SPDX-License-Identifier: MIT
 
-import './ERC20Sample.sol';
+pragma solidity ^0.8.6;
+
+import './TemplateToken.sol';
 
 
 contract ERC20Factory {
