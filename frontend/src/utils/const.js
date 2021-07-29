@@ -656,4 +656,4 @@ export const BRIDGE_ABI = [
 	}
 ]
 
-export const BASE_URL = process.env.NODE_ENV == 'development' ? 'http://148.70.33.227:9580/api/' : "http://148.70.33.227:9580/api/";
+export const BASE_URL = process.env.NODE_ENV === 'development' ? process.env.TEST_BASE_URL : process.env.BASE_URL;
