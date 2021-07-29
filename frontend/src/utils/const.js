@@ -655,5 +655,4 @@ export const BRIDGE_ABI = [
 		"type": "receive"
 	}
 ]
-console.log(process.env)
 export const BASE_URL = process.env.NODE_ENV === 'development' ? process.env.VUE_APP_TEST_BASE_URL : process.env.BASE_URL;
