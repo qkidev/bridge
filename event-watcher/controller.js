@@ -24,31 +24,6 @@ const getIsCheck = () => {
     })
 }
 
-// 取链当前锁值
-const getChainLock = (chain) => {
-    return new Promise((resolve, reject) => {
-        connection.query('SELECT * FROM `setting` WHERE `name` = ?', [`${chain}_lock_number`], (err, res, fields) => {
-            if (err) {
-                return reject(err)
-            } else {
-                return resolve(res[0].value)
-            }
-        })
-    })
-}
-
-const setChainLock = (chainId, number) => {
-    return new Promise((resolve, reject) => {
-        connection.query('UPDATE setting SET `value` = ? WHERE `name` = ?', [number, `${chainId}_lock_number`], (error, results, fields) => {
-            if (error) {
-                return reject(error)
-            } else {
-                return resolve(results)
-            }
-        })
-    })
-}
-
 const getChains = () => {
     return new Promise((resolve, reject) => {
         connection.query('SELECT * FROM chain WHERE `status`= 1', (error, results, fields) => {
@@ -1148,7 +1123,7 @@ async function main() {
             isMain = isMain ? 1 : 0
             const pair = await getPairNative(item.chainId, toChainId, isMain)
             value = (value.toString() / 10 ** pair['decimal']).toFixed(pair['decimal'])
-            const max = pair.maxValue || 100000000000
+            const max = pair.maxValue > 0 ? pair.maxValue : 100000000000
             if (value >= pair.minValue && value <= max) {
                 const log = await getLog(event.transactionHash)
                 if (typeof (log) === "undefined") {
@@ -1189,9 +1164,10 @@ async function main() {
                 toChainId = toChainId.toString()
                 const pair = await getPair(item.chainId, toChainId, fromToken, toToken)
                 value = (value.toString() / 10 ** pair['decimal']).toFixed(pair['decimal'])
-                const max = pair.maxValue || 100000000000
+                const max = pair.maxValue > 0 ? pair.maxValue : 100000000000
                 if (value >= pair.minValue && value <= max) {
                     const log = await getLog(event.transactionHash)
+                    // console.log(pair.id, recipient, value, item.chainId, toChainId, event.transactionHash)
                     if (typeof (log) === "undefined") {
                         logSave(pair.id, recipient, value, item.chainId, toChainId, event.transactionHash)
                     }
@@ -1209,7 +1185,7 @@ async function main() {
                                     const amount = ethers.utils.parseUnits((value - fee).toFixed(pair['decimal']), pair['decimal'])
                                     // console.log(item.chainId, event.transactionHash, fromToken, recipient, amount,false,!pair['isMain'])
                                     const tx = await manager['submitTransaction'](item.chainId, event.transactionHash, fromToken, recipient, amount, false, !pair['isMain'], {
-                                        gasPrice: ethers.utils.parseUnits('10', 'gwei')
+                                        // gasPrice: ethers.utils.parseUnits('20', 'gwei')
                                     })
                                     // console.log(event.transactionHash, tx.hash)
                                     isSuccess = true

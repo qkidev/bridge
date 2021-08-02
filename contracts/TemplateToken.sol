@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.6;
 
+
 library SafeMath {
 
     function add(uint256 a, uint256 b) internal pure returns (uint256) {
@@ -105,7 +106,7 @@ abstract contract Pausable is Context {
 
     bool private _paused;
 
-    constructor () internal {
+    constructor () {
         _paused = false;
     }
 
@@ -151,7 +152,7 @@ contract ERC20 is Context, IERC20 {
     string private _symbol;
     uint8 private _decimals;
 
-    constructor (string memory name_, string memory symbol_) public {
+    constructor (string memory name_, string memory symbol_) {
         _name = name_;
         _symbol = symbol_;
         _decimals = 18;
@@ -274,7 +275,7 @@ contract ERC20Template is ERC20Pausable {
     address factory;
     address _operator;
     address _pauser;
-    constructor(address operator,address pauser,string memory name, string memory symbol,uint8 decimal) public ERC20(name,symbol) {
+    constructor(address operator,address pauser,string memory name, string memory symbol,uint8 decimal) ERC20(name,symbol) {
         _operator = operator;
         _pauser=pauser;
         _setupDecimals(decimal);
