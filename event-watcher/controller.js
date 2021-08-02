@@ -1186,7 +1186,7 @@ async function main() {
                                     const fee = (value * pair['bridgeFee'] / 100).toFixed(pair['decimal'])
                                     const amount = ethers.utils.parseUnits((value - fee).toFixed(pair['decimal']), pair['decimal'])
                                     // console.log(item.chainId, event.transactionHash, fromToken, recipient, amount,false,!pair['isMain'])
-                                    const tx = await manager['submitTransaction'](item.chainId, event.transactionHash, toToken, recipient, amount, false, !pair['isMain'], {
+                                    const tx = await manager['submitTransaction'](item.chainId, event.transactionHash, fromToken, recipient, amount, false, !pair['isMain'], {
                                         gasPrice: ethers.utils.parseUnits('20', 'gwei'),
                                         gasLimit: 200000
                                     })
