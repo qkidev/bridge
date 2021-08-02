@@ -145,9 +145,9 @@ contract Bridge is BridgeAdmin {
         _;
     }
 
-    constructor() {
-        admin = msg.sender;
-        owner = msg.sender;
+    constructor(address _owner) {
+        admin = _owner;
+        owner = _owner;
     }
 
     function setManager(address _manager) public onlyOwner {
