@@ -23,6 +23,7 @@ class ChainController extends AdminController
             $grid->column('url');
             $grid->column('icon');
             $grid->column('name');
+            $grid->column('status');
             $grid->column('sort');
             $grid->column('title');
             $grid->column('bridge');
@@ -70,6 +71,7 @@ class ChainController extends AdminController
             $form->text('sort');
             $form->text('title');
             $form->text('url');
+            $form->text('status');
             $form->text('bridge');
             $form->text('bridge_manager');
         });
