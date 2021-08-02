@@ -40,10 +40,8 @@ contract BridgeManager {
     // multiSigns[networkID][txHash] = managers[]
     mapping(uint => mapping(bytes => address[])) public multiSigns;
 
-    constructor(uint _signLimit, address _bridgeAddress) {
-        owner = msg.sender;
-        isManager[msg.sender] = true;
-        Managers.push(msg.sender);
+    constructor(uint _signLimit, address _bridgeAddress,address _owner) {
+        owner = _owner;
         signLimit = _signLimit;
         bridgeAddress = _bridgeAddress;
     }
