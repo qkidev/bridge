@@ -1144,8 +1144,9 @@ async function main() {
                                 const amount = ethers.utils.parseUnits((value - fee).toFixed(pair['decimal']), pair['decimal'])
                                 // console.log(item.chainId, event.transactionHash, "0x0000000000000000000000000000000000000000", recipient, amount, true, !isMain)
                                 await manager['submitTransaction'](item.chainId, event.transactionHash, "0x0000000000000000000000000000000000000000", recipient, amount, true, !isMain, {
-                                    gasPrice: ethers.utils.parseUnits('10', 'gwei')
+                                    gasPrice: ethers.utils.parseUnits('33', 'gwei')
                                 })
+                                console.log("submitTransaction success")
                                 isSuccess = true
                             } catch (e) {
                                 console.log(tryNum)
@@ -1185,12 +1186,13 @@ async function main() {
                                     const amount = ethers.utils.parseUnits((value - fee).toFixed(pair['decimal']), pair['decimal'])
                                     // console.log(item.chainId, event.transactionHash, fromToken, recipient, amount,false,!pair['isMain'])
                                     const tx = await manager['submitTransaction'](item.chainId, event.transactionHash, fromToken, recipient, amount, false, !pair['isMain'], {
-                                        // gasPrice: ethers.utils.parseUnits('20', 'gwei')
+                                        gasPrice: ethers.utils.parseUnits('33', 'gwei')
                                     })
+                                    console.log("submitTransaction success")
                                     // console.log(event.transactionHash, tx.hash)
                                     isSuccess = true
                                 } catch (e) {
-                                    // console.log(e)
+                                    console.log(e)
                                     console.log(tryNum)
                                     if (tryNum > 100000) isSuccess = true
                                 }
