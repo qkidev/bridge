@@ -46,9 +46,12 @@ Route::get("items", function (Request $request) {
     }
     $grouped = $items->groupBy('name');
 
+    $gweis = Chain::query()->pluck("gwei", "chainId");
+
     return response()->json([
         'code' => 0,
-        'data' => $grouped->all()
+        'data' => $grouped->all(),
+        'gweis' => $gweis
     ]);
 });
 

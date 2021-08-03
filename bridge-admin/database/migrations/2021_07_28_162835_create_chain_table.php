@@ -24,6 +24,7 @@ class CreateChainTable extends Migration
             $table->unsignedSmallInteger('status')->default('0')->nullable()->comment('状态');
             $table->string('title')->nullable()->comment('标题');
             $table->string('url')->nullable()->comment('链接');
+            $table->integer('gwei')->nullable()->default(10)->comment('气费单位');
         });
     }
 

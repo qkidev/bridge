@@ -24,6 +24,7 @@ class ChainController extends AdminController
             $grid->column('icon');
             $grid->column('name');
             $grid->column('status');
+            $grid->column('gwei');
             $grid->column('sort');
             $grid->column('title');
             $grid->column('bridge');
@@ -74,6 +75,7 @@ class ChainController extends AdminController
             $form->text('status');
             $form->text('bridge');
             $form->text('bridge_manager');
+            $form->text('gwei');
         });
     }
 }
