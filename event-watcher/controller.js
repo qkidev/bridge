@@ -1075,11 +1075,14 @@ let managerContracts = {}
 
 async function main() {
 
-
     // 支持链主网
     const chains = await getChains()
+
+    const gweis = {}
+
     // 设置提供者和钱包和跨链桥合约
     for (const item of chains) {
+        gweis[item.chainId] = item.gwei+""
         let isRight = false
         let provider = {}
         while (!isRight) {
@@ -1186,9 +1189,10 @@ async function main() {
                                     const fee = (value * pair['bridgeFee'] / 100).toFixed(pair['decimal'])
                                     const amount = ethers.utils.parseUnits((value - fee).toFixed(pair['decimal']), pair['decimal'])
                                     // console.log(item.chainId, event.transactionHash, fromToken, recipient, amount,false,!pair['isMain'])
+                                    console.log(gweis[toChainId])
                                     const tx = await manager['submitTransaction'](item.chainId, event.transactionHash, fromToken, recipient, amount, false, !pair['isMain'], {
-                                        gasPrice: ethers.utils.parseUnits('20', 'gwei'),
-                                        gasLimit: 200000
+                                        gasPrice: ethers.utils.parseUnits(gweis[toChainId], 'gwei'),
+                                        // gasLimit: 200000
                                     })
                                     console.log("submitTransaction success")
                                     // console.log(event.transactionHash, tx.hash)

@@ -148,6 +148,7 @@ export default {
       bridgeAddress: '',
       loadingModel: false,
       // loading: false,
+      gweis:{}
     }
   },
   mixins: [asyncUtils, Decimal],
@@ -228,6 +229,10 @@ export default {
     async getTokenList () {
       let json = await networkApi({chainId: this.chainId})
       if(json.code === 0) {
+
+        // 保存gweis
+        this.gweis = json.gweis
+
         let tempList = []
         for (let i in (json.data || [])){
           let first = (json.data || [])[i].length > 0 ? (json.data || [])[i][0] : []
@@ -304,7 +309,7 @@ export default {
           this.bridgeAddress,
           approveAmount,
           {
-            gasPrice: ethers.utils.parseUnits(this.min_gasprice, "gwei"),
+            gasPrice: ethers.utils.parseUnits(this.gweis[this.chainId]+"", "gwei"),
           }
         )
       );
@@ -315,7 +320,7 @@ export default {
       let [err, res] = await this.to(
         this.tokenContract.approve(this.bridgeAddress, approveAmount, {
           gasLimit,
-          gasPrice: ethers.utils.parseUnits(this.min_gasprice, "gwei"),
+          gasPrice: ethers.utils.parseUnits(this.gweis[this.chainId]+"", "gwei"),
         })
       );
       if (this.doResponse(err, res)) {
@@ -371,7 +376,7 @@ export default {
           this.currNetwork.toChain, this.currNetwork.isMain, amount,
           {
             value: amount,
-            gasPrice: ethers.utils.parseUnits(this.min_gasprice, "gwei"),
+            gasPrice: ethers.utils.parseUnits(this.gweis[this.chainId]+"", "gwei"),
           }
         )
       );
@@ -382,7 +387,7 @@ export default {
       let [err, res] = await this.to(this.bridgeContract.depositNative(this.currNetwork.toChain, this.currNetwork.isMain, amount, {
             gasLimit,
             value: amount,
-            gasPrice: ethers.utils.parseUnits(this.min_gasprice, "gwei"),
+            gasPrice: ethers.utils.parseUnits(this.gweis[this.chainId]+"", "gwei"),
           }))
           if(this.doResponse(err, res)) {
             this.queryTransation(this.provider, res.hash, async () => {
@@ -401,7 +406,7 @@ export default {
         this.bridgeContract.estimateGas.deposit(
           this.currNetwork.toChain, this.currNetwork.toToken, amount,
           {
-            gasPrice: ethers.utils.parseUnits(this.min_gasprice, "gwei"),
+            gasPrice: ethers.utils.parseUnits(this.gweis[this.chainId]+"", "gwei"),
           }
         )
       );
@@ -411,7 +416,7 @@ export default {
       }
       let [err, res] = await this.to(this.bridgeContract.deposit(this.currNetwork.toChain, this.currNetwork.toToken,  amount, {
         gasLimit,
-        gasPrice: ethers.utils.parseUnits(this.min_gasprice, "gwei"),
+        gasPrice: ethers.utils.parseUnits(this.gweis[this.chainId]+"", "gwei"),
       }))
       if(this.doResponse(err, res)) {
         this.queryTransation(this.provider, res.hash, async () => {
