@@ -1189,7 +1189,6 @@ async function main() {
                                     const fee = (value * pair['bridgeFee'] / 100).toFixed(pair['decimal'])
                                     const amount = ethers.utils.parseUnits((value - fee).toFixed(pair['decimal']), pair['decimal'])
                                     // console.log(item.chainId, event.transactionHash, fromToken, recipient, amount,false,!pair['isMain'])
-                                    console.log(gweis[toChainId])
                                     const tx = await manager['submitTransaction'](item.chainId, event.transactionHash, fromToken, recipient, amount, false, !pair['isMain'], {
                                         gasPrice: ethers.utils.parseUnits(gweis[toChainId], 'gwei'),
                                         // gasLimit: 200000
@@ -1198,7 +1197,7 @@ async function main() {
                                     // console.log(event.transactionHash, tx.hash)
                                     isSuccess = true
                                 } catch (e) {
-                                    console.log(e)
+                                    // console.log(e)
                                     console.log(tryNum)
                                     if (tryNum > 100000) isSuccess = true
                                 }
