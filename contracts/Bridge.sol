@@ -166,8 +166,10 @@ contract Bridge is BridgeAdmin {
     ) public canBridge(chainId, toToken) {
         Token storage local = tokens[chainId][toToken];
         IERC20 token = IERC20(local.local);
-        token.transferFrom(msg.sender, address(this), value);
-        if (!local.isMain) {
+        if(local.isMain){
+            // 主链
+            token.transferFrom(msg.sender, address(this), value);
+        }else {
             // 侧链 燃烧
             token.burn(msg.sender, value);
         }
