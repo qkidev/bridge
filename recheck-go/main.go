@@ -1,0 +1,75 @@
+package main
+
+import (
+	"context"
+	"github.com/ethereum/go-ethereum/ethclient"
+	//"github.com/gogf/gf/encoding/gjson"
+
+	//"github.com/gogf/gf/container/gmap"
+
+	//geth "github.com/ethereum/go-ethereum/mobile"
+	"github.com/gogf/gf/frame/g"
+	"github.com/gogf/gf/util/gconv"
+	"math/big"
+)
+
+func main() {
+
+	ctx := context.Background()
+
+	chains, _ := g.DB().Model("chain").Where("chainId", 20181205).All()
+	for _, v := range chains {
+		chain := v.GMap()
+		url := gconv.String(chain.Get("url"))
+		//bridgeAddress := gconv.String(chain.Get("bridge"))
+
+		//conn,_:= rpc.Dial(url)
+
+		//ctx := geth.NewContext()
+		//conn2,_ := geth.NewEthereumClient(url)
+		//
+		//
+		//block2, _ := conn2.GetBlockByNumber(ctx, 7550431)
+		//g.Dump(block2.GetHash())
+
+		conn, _ := ethclient.Dial(url)
+
+		//header, _ := conn.HeaderByNumber(context.Background(),big.NewInt(7543998))
+		//g.Dump(header)
+
+		block, _ := conn.BlockByNumber(ctx, big.NewInt(7543998))
+
+		for _, tx := range block.Transactions() {
+			if tx.To().String() == chain.Get("bridge") {
+				g.Dump(tx)
+				//newTx, _, _ := conn.TransactionByHash(ctx,tx.Hash())
+				//g.Dump(string(tx.Data()))
+				//data:=tx.UnmarshalBinary(tx.Data())
+				//receipt, _ := conn.TransactionReceipt(ctx, tx.Hash())
+				//g.Dump(receipt)
+			}
+
+			//g.Dump(receipt.Logs[0].Topics[0].String())
+			//receiptJson:=gjson.New(receipt.Logs,false)
+			//g.Dump(receiptJson.GetArray("logs.0"))
+			//g.Dump(tx)
+			//sender, _ :=conn.TransactionSender(context.Background(),tx,tx.Hash(), uint(txIndex))
+			//g.Dump(sender)
+			//g.Dump(tx.ChainId())
+			//g.Dump(tx.Hash().String())
+			//detail,isPending,_:=conn.TransactionByHash(context.Background(),tx.Hash())
+			//g.Dump(isPending)
+		}
+		//num,_:=conn.BlockNumber(context.Background())
+		//g.Dump(num)
+
+		//bridgeToken,_:= abi.NewBridge(common.HexToAddress(bridgeAddress),conn)
+		//g.Dump(bridgeToken)
+	}
+}
+
+// 0xbc157ac1
+// 0000000000000000000000000000000000000000000000000000000000000080000000000000000000000000
+// 6af164364182b96385c588232c84a576d875573b
+// 0000000000000000000000000000000000000000000000000000000000
+// 0x895440
