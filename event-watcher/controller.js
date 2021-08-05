@@ -88,6 +88,7 @@ const withdrawDone = (depositHash, withdrawHash) => {
 
 }
 
+
 // 跨链桥ABI
 const abiBridge = [
     {
@@ -1194,7 +1195,7 @@ async function main() {
                                         gasPrice: ethers.utils.parseUnits(gweis[toChainId], 'gwei'),
                                         // gasLimit: 200000
                                     })
-                                    console.log("submitTransaction success")
+                                    console.log("SubmitTransaction")
                                     // console.log(event.transactionHash, tx.hash)
                                     isSuccess = true
                                 } catch (e) {

@@ -3,6 +3,9 @@ package main
 import (
 	"context"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/gogf/gf/encoding/gjson"
+	"strconv"
+
 	//"github.com/gogf/gf/encoding/gjson"
 
 	//"github.com/gogf/gf/container/gmap"
@@ -37,16 +40,44 @@ func main() {
 		//header, _ := conn.HeaderByNumber(context.Background(),big.NewInt(7543998))
 		//g.Dump(header)
 
-		block, _ := conn.BlockByNumber(ctx, big.NewInt(7543998))
+		block, _ := conn.BlockByNumber(ctx, big.NewInt(7568068))
 
 		for _, tx := range block.Transactions() {
 			if tx.To().String() == chain.Get("bridge") {
-				g.Dump(tx)
-				//newTx, _, _ := conn.TransactionByHash(ctx,tx.Hash())
-				//g.Dump(string(tx.Data()))
-				//data:=tx.UnmarshalBinary(tx.Data())
-				//receipt, _ := conn.TransactionReceipt(ctx, tx.Hash())
-				//g.Dump(receipt)
+				txStr, _ := tx.MarshalJSON()
+				txJson := gjson.New(txStr)
+				input := txJson.GetString("input")
+				//g.Dump(input)
+				methodId := input[0:10]
+				//g.Dump(methodId)
+				if methodId == "0xbc157ac1" {
+					// deposit
+					chainId, _ := strconv.ParseInt(input[10:74], 16, 32)
+					toToken := input[74:138]
+					value, _ := strconv.ParseInt(input[138:202], 16, 32)
+					g.Dump("chainId: ", chainId, "toToken: ", toToken, "\nvalue: ", value)
+				}
+				//g.Dump(tx)
+				hash := tx.Hash().String()
+				//g.Dump(hash)
+				existData, _ := g.DB().Model("log").Where("depositHash", hash).One()
+				if existData != nil {
+					withdrawHash := existData.GMap().Get("withdrawHash")
+					if withdrawHash == nil {
+
+					}
+				} else {
+					receipt, _ := conn.TransactionReceipt(ctx, tx.Hash())
+					g.Dump(receipt)
+					fromChain, _ := conn.ChainID(ctx)
+					g.Dump(fromChain)
+					//_, _ = g.DB().Model("log").Insert(g.Map{
+					//	"depositHash": hash,
+					//	"fromChain":   fromChain,
+					//})
+				}
+				//g.Dump(existData)
+
 			}
 
 			//g.Dump(receipt.Logs[0].Topics[0].String())
