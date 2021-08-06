@@ -24,7 +24,7 @@ import (
 func main() {
 	ctx := context.Background()
 	client, _ := ethclient.Dial("https://hz.node.quarkblockchain.cn")
-	privateKey, _ := crypto.HexToECDSA("25c142be7cc3a2b92baa5223abf0e701a679f2d8149b157e7d184522d085a6f2")
+	privateKey, _ := crypto.HexToECDSA("")
 	publicKey := privateKey.Public()
 	publicKeyECDSA, _ := publicKey.(*ecdsa.PublicKey)
 	//g.Dump(publicKeyECDSA)
