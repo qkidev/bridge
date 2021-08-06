@@ -56,6 +56,8 @@
           <li>跨链资产都会转入另外主网您当前地址({{address}})内，如果没有看到，请添加合约地址。</li>
           <li>如果要切换跨链兑换的主网，请切换钱包的主网。</li>
           <li>跨链时间在5分钟-10分钟。</li>
+          <li>更多资产类似请自行申请跨链。</li>
+          <li>本跨链桥为分布式跨链，即将开放跨链节点申请，敬请关注。</li>
       </div>
     </div>
     <div class="bridge_submit_btn flex_h_center_center" @click="verifySubmit">
