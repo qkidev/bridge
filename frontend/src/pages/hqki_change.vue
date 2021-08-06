@@ -386,9 +386,10 @@ export default {
         this.loadingModel = false
         return 0;
       }
+      let value = this.currNetwork.isMain ? amount : 0
       let [err, res] = await this.to(this.bridgeContract.depositNative(this.currNetwork.toChain, this.currNetwork.isMain, amount, {
             gasLimit,
-            value: amount,
+            value: value,
             gasPrice: ethers.utils.parseUnits(this.gweis[this.chainId]+"", "gwei"),
           }))
           if(this.doResponse(err, res)) {
