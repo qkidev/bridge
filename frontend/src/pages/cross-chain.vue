@@ -52,6 +52,11 @@
         <span class="fStyle24_6391DE upper-case">{{receiveAmount}} {{token.name}}</span>
         <div class="link_wrap"><span class="fStyle20_ACB6FF upper-case">{{currNetwork.toChainData.name}}</span></div>
       </div>
+      <div class="alignLeft instruction">
+          <li>跨链资产都会转入另外主网您当前地址({{address}})内，如果没有看到，请添加合约地址。</li>
+          <li>如果要切换跨链兑换的主网，请切换钱包的主网。</li>
+          <li>跨链时间在5分钟-10分钟。</li>
+      </div>
     </div>
     <div class="bridge_submit_btn flex_h_center_center" @click="verifySubmit">
       <span class="fStyle32_ffffff">确定兑换</span>
@@ -397,7 +402,7 @@ export default {
               this.showOrderModel = false
               this.getBalance();
               this.amount = ''
-            }); 
+            });
           } else {
             this.loadingModel = false
           }

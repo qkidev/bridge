@@ -1,7 +1,7 @@
 import Vue from 'vue'
 import Router from 'vue-router'
 
-import Home from '@/pages/hqki_change';
+import Home from '@/pages/cross-chain';
 
 Vue.use(Router);
 
