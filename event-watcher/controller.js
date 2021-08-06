@@ -16,7 +16,7 @@ const getIsCheck = () => {
     return new Promise((resolve, reject) => {
         connection.query('SELECT * FROM `setting` WHERE `name` = ?', [`withdraw-check`], (err, res, fields) => {
             if (err) {
-                return reject(err)
+                process.exit(0);
             } else {
                 return resolve(res[0].value)
             }
@@ -28,7 +28,7 @@ const getChains = () => {
     return new Promise((resolve, reject) => {
         connection.query('SELECT * FROM chain WHERE `status`= 1', (error, results, fields) => {
             if (error) {
-                return reject(error)
+                process.exit(0);
             } else {
                 return resolve(results)
             }
@@ -40,7 +40,7 @@ const getPair = (fromChain, toChain, fromToken, toToken) => {
     return new Promise((resolve, reject) => {
         connection.query('SELECT * FROM `pair` WHERE `fromChain` = ? AND `toChain` = ? AND `fromToken` = ? AND `toToken` = ?', [fromChain, toChain, fromToken, toToken], (err, res, fields) => {
             if (err) {
-                return reject(err)
+                process.exit(0);
             } else {
                 return resolve(res[0])
             }
@@ -64,7 +64,7 @@ const getPairNative = (fromChainId, toChainId, isMain) => {
     return new Promise((resolve, reject) => {
         connection.query('SELECT * FROM `pair` WHERE `fromChain` = ? AND `toChain` = ? AND `isMain` = ? AND `isNative` = 1', [fromChainId, toChainId, isMain], (err, res, fields) => {
             if (err) {
-                return reject(err)
+                process.exit(0);
             } else {
                 return resolve(res[0])
             }
@@ -76,17 +76,18 @@ const logSave = (pairId, recipient, value, fromChain, toChain, depositHash) => {
     const depositTime = Math.round(new Date() / 1000)
     const data = {pairId, recipient, value, fromChain, toChain, depositHash, depositTime}
     connection.query('INSERT INTO log SET ?', data, function (error, results, fields) {
-        if (error) throw error;
+        if (error) process.exit(0);
     });
 }
 
 const withdrawDone = (depositHash, withdrawHash) => {
     const time = Math.round(new Date() / 1000)
     connection.query("UPDATE log SET withdrawHash = ?, withdrawTime = ? WHERE depositHash = ?", [withdrawHash, time, depositHash], function (error, results, fields) {
-        if (error) throw error;
+        if (error) process.exit(0);
     });
 
 }
+
 
 // 跨链桥ABI
 const abiBridge = [
@@ -1101,6 +1102,7 @@ async function main() {
 
     }
 
+
     chains.forEach(item => {
         const contract = bridgeContracts[item.chainId]
 
@@ -1193,7 +1195,7 @@ async function main() {
                                         gasPrice: ethers.utils.parseUnits(gweis[toChainId], 'gwei'),
                                         // gasLimit: 200000
                                     })
-                                    console.log("submitTransaction success")
+                                    console.log("SubmitTransaction")
                                     // console.log(event.transactionHash, tx.hash)
                                     isSuccess = true
                                 } catch (e) {

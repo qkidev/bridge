@@ -332,6 +332,7 @@ export default {
     },
     async submit() {
       let amount = this.calcAmount();
+      console.log(amount)
       let minAmount = this.calcWei(this.currNetwork.minValue);
       let maxAmount = this.calcWei(this.currNetwork.maxValue);
       if(Big(amount).lt(Big(minAmount))) {
@@ -371,6 +372,7 @@ export default {
     },
     async exchangeMain() {
       let amount = this.calcAmount();
+      console.log(amount)
       const gasLimit = await this.getEstimateGas(() =>
         this.bridgeContract.estimateGas.depositNative(
           this.currNetwork.toChain, this.currNetwork.isMain, amount,
@@ -402,6 +404,7 @@ export default {
     },
     async exchange() {
       let amount = this.calcAmount()
+      console.log(amount)
       const gasLimit = await this.getEstimateGas(() =>
         this.bridgeContract.estimateGas.deposit(
           this.currNetwork.toChain, this.currNetwork.toToken, amount,
