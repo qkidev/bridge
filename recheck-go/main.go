@@ -2,8 +2,13 @@ package main
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/gogf/gf/encoding/gjson"
+	"recheck-go/store"
 	"strconv"
 
 	//"github.com/gogf/gf/encoding/gjson"
@@ -17,6 +22,30 @@ import (
 )
 
 func main() {
+	ctx := context.Background()
+	client, _ := ethclient.Dial("https://hz.node.quarkblockchain.cn")
+	privateKey, _ := crypto.HexToECDSA("25c142be7cc3a2b92baa5223abf0e701a679f2d8149b157e7d184522d085a6f2")
+	publicKey := privateKey.Public()
+	publicKeyECDSA, _ := publicKey.(*ecdsa.PublicKey)
+	//g.Dump(publicKeyECDSA)
+	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+	//g.Dump(fromAddress.String())
+	nonce, _ := client.PendingNonceAt(ctx, fromAddress)
+	g.Dump("nonce: ", nonce)
+	gasPrice, _ := client.SuggestGasPrice(ctx)
+	g.Dump("gasPrice: ", gasPrice)
+	auth, _ := bind.NewKeyedTransactorWithChainID(privateKey, big.NewInt(20181205))
+	auth.Nonce = big.NewInt(int64(nonce))
+	auth.Value = big.NewInt(20)
+	auth.GasLimit = uint64(300000)
+	auth.GasPrice = gasPrice
+	address := common.HexToAddress("0x5996aEEBCb45180619ab63f0E537f766954D484a")
+	instanceBridgeManager, _ := store.NewBridgeManager(address, client)
+	signLimit, _ := instanceBridgeManager.BridgeAddress(nil)
+	g.Dump(signLimit)
+}
+
+func demo() {
 
 	ctx := context.Background()
 
@@ -57,6 +86,12 @@ func main() {
 					value, _ := strconv.ParseInt(input[138:202], 16, 32)
 					g.Dump("chainId: ", chainId, "toToken: ", toToken, "\nvalue: ", value)
 				}
+
+				if methodId == "0x02367ad2" {
+					// deposit native
+
+				}
+
 				//g.Dump(tx)
 				hash := tx.Hash().String()
 				//g.Dump(hash)
@@ -67,10 +102,10 @@ func main() {
 
 					}
 				} else {
-					receipt, _ := conn.TransactionReceipt(ctx, tx.Hash())
-					g.Dump(receipt)
-					fromChain, _ := conn.ChainID(ctx)
-					g.Dump(fromChain)
+					//receipt, _ := conn.TransactionReceipt(ctx, tx.Hash())
+					//g.Dump(receipt)
+					//fromChain, _ := conn.ChainID(ctx)
+					//g.Dump(fromChain)
 					//_, _ = g.DB().Model("log").Insert(g.Map{
 					//	"depositHash": hash,
 					//	"fromChain":   fromChain,
