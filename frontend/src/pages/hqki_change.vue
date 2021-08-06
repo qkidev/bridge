@@ -372,12 +372,12 @@ export default {
     },
     async exchangeMain() {
       let amount = this.calcAmount();
-      console.log(amount)
+      let value = this.currNetwork.isMain ? amount : 0
       const gasLimit = await this.getEstimateGas(() =>
         this.bridgeContract.estimateGas.depositNative(
           this.currNetwork.toChain, this.currNetwork.isMain, amount,
           {
-            value: amount,
+            value: value,
             gasPrice: ethers.utils.parseUnits(this.gweis[this.chainId]+"", "gwei"),
           }
         )
@@ -386,7 +386,6 @@ export default {
         this.loadingModel = false
         return 0;
       }
-      let value = this.currNetwork.isMain ? amount : 0
       let [err, res] = await this.to(this.bridgeContract.depositNative(this.currNetwork.toChain, this.currNetwork.isMain, amount, {
             gasLimit,
             value: value,
