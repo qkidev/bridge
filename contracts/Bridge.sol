@@ -187,7 +187,7 @@ contract Bridge is BridgeAdmin {
         } else {
             // 侧链跨出
             IERC20 token = IERC20(native.local);
-            token.transferFrom(msg.sender, address(this), value);
+            token.burn(msg.sender, value);
         }
         emit DepositNative(toChainId, isMain, msg.sender, value);
     }
