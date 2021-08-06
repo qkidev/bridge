@@ -3,9 +3,9 @@ import { get } from './http'
 // 跨链桥获取币种和支持的主网链
 export const networkApi = (params) => {
   if(params.token) {
-    return get('https://chaincross.cc/api/items?chain='+params.chainId+'&token='+params.token)
+    return get('items?chain='+params.chainId+'&token='+params.token)
   }
-  return get('https://chaincross.cc/api/items?chain='+params.chainId)
+  return get('items?chain='+params.chainId)
 };
 
 
