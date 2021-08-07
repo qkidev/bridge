@@ -38,6 +38,8 @@ class LogController extends AdminController
                 return date("Y-m-d H:i:s", $this->depositTime);
             });
             $grid->column('value');
+            $grid->column('fee');
+            $grid->column('amount');
             $grid->column('withdrawTime')->display(function () {
                 if ($this->withdrawTime) {
                     return date("Y-m-d H:i:s", $this->withdrawTime);

@@ -14,7 +14,9 @@ return [
         'value' => '数额',
         'withdrawHash' => '跨入交易hash',
         'withdrawTime' => '跨入交易时间',
-        'description'=>'概述'
+        'description' => '概述',
+        "fee" => "手续费",
+        "amount" => "实际到账"
     ],
     'options' => [
     ],
