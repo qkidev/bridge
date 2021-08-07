@@ -24,6 +24,9 @@ class CreateLogTable extends Migration
             $table->string('value')->nullable()->comment('数额');
             $table->string('withdrawHash')->nullable()->comment('提现hash');
             $table->string('withdrawTime')->nullable()->comment('提现时间');
+            $table->string('fee')->nullable()->comment('手续费');
+            $table->string('amount')->nullable()->comment('到账数额');
+            $table->tinyInteger('withdrawSubmit')->default(0)->comment('是否提交了提现调用');
         });
     }
 

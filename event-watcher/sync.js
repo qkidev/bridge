@@ -86,7 +86,7 @@ const getPair = (fromChain, toChain, fromToken, toToken) => {
 const main = async () => {
     setInterval(() => {
         sync()
-    }, 2000)
+    }, 3000)
 }
 
 const sync = async () => {
@@ -95,12 +95,8 @@ const sync = async () => {
         let provider, num
         provider = new ethers.providers.JsonRpcProvider(chain.url)
         num = await provider.getBlockNumber()
-        let toNum
-        if ((num - chain['syncNumber']) > 5000) {
-            toNum = chain['syncNumber'] + 5000
-        } else {
-            toNum = num - 2
-        }
+        let toNum = chain['syncLimit'] > 0 ? chain['syncNumber'] + chain['syncLimit'] : num
+        if (toNum >= num) toNum -= 2
         if ((toNum - chain['syncNumber']) < 5) continue
         const bridge = new ethers.Contract(chain.bridge, abi.bridge(), provider)
         const depositLogs = await bridge.queryFilter(bridge.filters.Deposit(), chain['syncNumber'], toNum)
