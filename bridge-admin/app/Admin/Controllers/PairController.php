@@ -32,7 +32,7 @@ class PairController extends AdminController
             $grid->column('tokenFee');
             $grid->column('bridgeFee');
             $grid->column('decimal');
-            $grid->column('icon')->image();
+            $grid->column('icon')->image("",50,50);
             $grid->column('isMain');
             $grid->column('isNative');
             $grid->column('minValue');
