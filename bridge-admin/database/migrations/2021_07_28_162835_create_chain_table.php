@@ -25,6 +25,8 @@ class CreateChainTable extends Migration
             $table->string('title')->nullable()->comment('标题');
             $table->string('url')->nullable()->comment('链接');
             $table->integer('gwei')->nullable()->default(10)->comment('气费单位');
+            $table->bigInteger('syncNumber')->default(0);
+            $table->integer('syncNumber')->default(5000);
         });
     }
 
