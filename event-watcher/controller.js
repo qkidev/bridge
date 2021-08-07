@@ -2,7 +2,7 @@ const {ethers} = require('ethers')
 require('dotenv').config()
 const mysql = require('mysql')
 
-const abi = require("./abi/index")
+const abi = require("./lib/abi")
 
 const connection = mysql.createConnection({
     host: process.env.DB_HOST,

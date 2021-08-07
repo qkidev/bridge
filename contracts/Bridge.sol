@@ -185,9 +185,9 @@ contract Bridge is BridgeAdmin {
             require(msg.value == value, "Bridge: value is wrong");
             require(msg.value > 0, "Bridge: value is 0");
         } else {
-            // 侧链跨出
+            // 侧链 燃烧
             IERC20 token = IERC20(native.local);
-            token.transferFrom(msg.sender, address(this), value);
+            token.burn(msg.sender, value);
         }
         emit DepositNative(toChainId, isMain, msg.sender, value);
     }
