@@ -31,7 +31,7 @@ const getChains = () => {
 
 const getUnWithdrawLog = () => {
     return new Promise((resolve, reject) => {
-        connection.query('SELECT * FROM log_new WHERE `withdrawHash`is null AND `withdrawSubmit` = 0 ORDER BY `id` DESC', (error, results, fields) => {
+        connection.query('SELECT * FROM log WHERE `withdrawHash`is null AND `withdrawSubmit` = 0 ORDER BY `id` DESC', (error, results, fields) => {
             if (error) {
                 return reject(error)
             } else {
@@ -43,7 +43,7 @@ const getUnWithdrawLog = () => {
 
 const submitWithdraw = (id) => {
     return new Promise((resolve, reject) => {
-        connection.query("UPDATE log_new SET `withdrawSubmit` = 1 WHERE `id` = ?", [id], function (error, results, fields) {
+        connection.query("UPDATE log SET `withdrawSubmit` = 1 WHERE `id` = ?", [id], function (error, results, fields) {
             if (error) return reject(error)
             return resolve(results)
         });
@@ -77,7 +77,13 @@ const getIsCheck = () => {
 
 
 const main = async () => {
+    await withdraw()
+    setInterval(async () => {
+        await withdraw()
+    }, 60000)
+}
 
+const withdraw = async () => {
     const isCheck = await getIsCheck()
 
     const chains = await getChains()
@@ -87,26 +93,15 @@ const main = async () => {
 
     for (const chain of chains) {
         gweis[chain.chainId] = chain.gwei + ""
-        let isRight = false
-        let provider = {}
-        while (!isRight) {
-            provider = new ethers.providers.JsonRpcProvider(chain.url)
-            try {
-                const num = await provider.getBlockNumber()
-                console.log(num)
-                isRight = true
-            } catch (e) {
-                // console.log(e)
-            }
-        }
+        const provider = new ethers.providers.JsonRpcProvider(chain.url)
+        const number = await provider.getBlockNumber()
+        console.log(number)
         const wallet = new ethers.Wallet(process.env.PK, provider)
         managers[chain.chainId] = new ethers.Contract(chain['bridge_manager'], abi.bridgeManager(), wallet)
-
     }
 
     const logs = await getUnWithdrawLog()
     for (const log of logs) {
-        console.log(log['id'])
         const pair = await getPairById(log['pairId'])
         if (!isCheck || pair['limit'] === 0 || log['value'] <= pair['limit']) {
             const manager = managers[log['toChain']]
@@ -118,16 +113,17 @@ const main = async () => {
                         tryNum += 1
                         const amount = ethers.utils.parseUnits(log['amount'], pair['decimal'])
                         const isNative = pair['isNative'] === 1
-                        await manager['submitTransaction'](log['fromChain'], log['depositHash'], pair['fromToken'], log['recipient'], amount, isNative, !pair['isMain'], {
+                        const tx = await manager['submitTransaction'](log['fromChain'], log['depositHash'], pair['fromToken'], log['recipient'], amount, isNative, !pair['isMain'], {
                             gasPrice: ethers.utils.parseUnits(gweis[log['toChain']], 'gwei'),
                         })
+                        await tx.wait()
                         await submitWithdraw(log['id'])
                         console.log("SubmitTransaction")
                         isSuccess = true
                     } catch (e) {
-                        console.log(e)
+                        console.log(e.message)
                         console.log(tryNum)
-                        if (tryNum > 100) isSuccess = true
+                        if (tryNum > 10) isSuccess = true
                     }
                 }
             }

@@ -40,7 +40,7 @@ const setSyncNumber = (chainId, number) => {
 const logSave = (pairId, recipient, value, fromChain, toChain, depositHash, fee, amount) => {
     const depositTime = Math.round(new Date() / 1000)
     const data = {pairId, recipient, value, fromChain, toChain, depositHash, depositTime, fee, amount}
-    connection.query('INSERT INTO log_new SET ?', data, function (error, results, fields) {
+    connection.query('INSERT INTO log SET ?', data, function (error, results, fields) {
         if (error) process.exit(0);
     });
 }
@@ -48,9 +48,9 @@ const logSave = (pairId, recipient, value, fromChain, toChain, depositHash, fee,
 
 const getLog = (hash) => {
     return new Promise((resolve, reject) => {
-        connection.query('SELECT * FROM `log_new` WHERE `depositHash` = ?', [hash], (err, res, fields) => {
-            if (err) {
-                return reject(err)
+        connection.query('SELECT * FROM `log` WHERE `depositHash` = ?', [hash], (error, res, fields) => {
+            if (error) {
+                return reject(error)
             } else {
                 return resolve(res[0])
             }
@@ -60,9 +60,9 @@ const getLog = (hash) => {
 
 const getPairNative = (fromChainId, toChainId, isMain) => {
     return new Promise((resolve, reject) => {
-        connection.query('SELECT * FROM `pair` WHERE `fromChain` = ? AND `toChain` = ? AND `isMain` = ? AND `isNative` = 1', [fromChainId, toChainId, isMain], (err, res, fields) => {
-            if (err) {
-                process.exit(0);
+        connection.query('SELECT * FROM `pair` WHERE `fromChain` = ? AND `toChain` = ? AND `isMain` = ? AND `isNative` = 1', [fromChainId, toChainId, isMain], (error, res, fields) => {
+            if (error) {
+                return reject(error)
             } else {
                 return resolve(res[0])
             }
@@ -72,9 +72,9 @@ const getPairNative = (fromChainId, toChainId, isMain) => {
 
 const getPair = (fromChain, toChain, fromToken, toToken) => {
     return new Promise((resolve, reject) => {
-        connection.query('SELECT * FROM `pair` WHERE `fromChain` = ? AND `toChain` = ? AND `fromToken` = ? AND `toToken` = ?', [fromChain, toChain, fromToken, toToken], (err, res, fields) => {
-            if (err) {
-                process.exit(0);
+        connection.query('SELECT * FROM `pair` WHERE `fromChain` = ? AND `toChain` = ? AND `fromToken` = ? AND `toToken` = ?', [fromChain, toChain, fromToken, toToken], (error, res, fields) => {
+            if (error) {
+                return reject(error)
             } else {
                 return resolve(res[0])
             }
@@ -82,11 +82,21 @@ const getPair = (fromChain, toChain, fromToken, toToken) => {
     })
 }
 
+const withdrawDone = (depositHash, withdrawHash) => {
+    const time = Math.round(new Date() / 1000)
+    connection.query("UPDATE log SET withdrawHash = ?, withdrawTime = ? WHERE depositHash = ?", [withdrawHash, time, depositHash], function (error, results, fields) {
+        if (error) {
+            console.log(error)
+        }
+    })
+}
+
 
 const main = async () => {
-    setInterval(() => {
-        sync()
-    }, 3000)
+    await sync()
+    setInterval(async () => {
+        await sync()
+    }, 60000)
 }
 
 const sync = async () => {
@@ -96,9 +106,10 @@ const sync = async () => {
         provider = new ethers.providers.JsonRpcProvider(chain.url)
         num = await provider.getBlockNumber()
         let toNum = chain['syncLimit'] > 0 ? chain['syncNumber'] + chain['syncLimit'] : num
-        if (toNum >= num) toNum -= 2
+        if (toNum >= num) toNum = num - 2
         if ((toNum - chain['syncNumber']) < 5) continue
         const bridge = new ethers.Contract(chain.bridge, abi.bridge(), provider)
+
         const depositLogs = await bridge.queryFilter(bridge.filters.Deposit(), chain['syncNumber'], toNum)
         for (const log of depositLogs) {
             const exist = await getLog(log.transactionHash)
@@ -135,6 +146,22 @@ const sync = async () => {
                 logSave(pair.id, recipient, value, chain.chainId, toChainId, log.transactionHash, fee, amount)
             }
         }
+
+        const withdrawDownLogs = await bridge.queryFilter(bridge.filters.WithdrawDone(), chain['syncNumber'], toNum)
+        for (const log of withdrawDownLogs) {
+            const depositHash = log.args[5]
+            const withdrawHash = log.transactionHash
+            withdrawDone(depositHash, withdrawHash)
+        }
+
+        const withdrawNativeDownLogs = await bridge.queryFilter(bridge.filters.WithdrawNativeDone(), chain['syncNumber'], toNum)
+        for (const log of withdrawNativeDownLogs) {
+            const depositHash = log.args[4]
+            const withdrawHash = log.transactionHash
+            withdrawDone(depositHash, withdrawHash)
+        }
+
+
         console.log(chain.chainId, toNum)
         await setSyncNumber(chain.chainId, toNum)
     }

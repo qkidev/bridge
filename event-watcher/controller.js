@@ -18,7 +18,8 @@ const getIsCheck = () => {
     return new Promise((resolve, reject) => {
         connection.query('SELECT * FROM `setting` WHERE `name` = ?', [`withdraw-check`], (err, res, fields) => {
             if (err) {
-                process.exit(0);
+                console.log("GetIsCheckError")
+                process.exit(0)
             } else {
                 return resolve(res[0].value)
             }
@@ -30,7 +31,8 @@ const getChains = () => {
     return new Promise((resolve, reject) => {
         connection.query('SELECT * FROM chain WHERE `status`= 1', (error, results, fields) => {
             if (error) {
-                process.exit(0);
+                console.log("GetChainsError")
+                process.exit(0)
             } else {
                 return resolve(results)
             }
@@ -42,7 +44,8 @@ const getPair = (fromChain, toChain, fromToken, toToken) => {
     return new Promise((resolve, reject) => {
         connection.query('SELECT * FROM `pair` WHERE `fromChain` = ? AND `toChain` = ? AND `fromToken` = ? AND `toToken` = ?', [fromChain, toChain, fromToken, toToken], (err, res, fields) => {
             if (err) {
-                process.exit(0);
+                console.log("GetPairError")
+                process.exit(0)
             } else {
                 return resolve(res[0])
             }
@@ -66,7 +69,8 @@ const getPairNative = (fromChainId, toChainId, isMain) => {
     return new Promise((resolve, reject) => {
         connection.query('SELECT * FROM `pair` WHERE `fromChain` = ? AND `toChain` = ? AND `isMain` = ? AND `isNative` = 1', [fromChainId, toChainId, isMain], (err, res, fields) => {
             if (err) {
-                process.exit(0);
+                console.log("GetPairNativeError")
+                process.exit(0)
             } else {
                 return resolve(res[0])
             }
@@ -79,7 +83,7 @@ const logSave = (pairId, recipient, value, fromChain, toChain, depositHash, fee,
     const data = {pairId, recipient, value, fromChain, toChain, depositHash, depositTime, fee, amount}
     connection.query('INSERT INTO log SET ?', data, function (error, results, fields) {
         if (error) {
-            // console.log(error)
+            console.log("LogSaveError")
             process.exit(0)
         }
     });
@@ -92,7 +96,7 @@ const withdrawDone = (depositHash, withdrawHash) => {
             // console.log(error)
             process.exit(0)
         }
-    });
+    })
 }
 
 const getGwei = (chainId) => {
@@ -104,6 +108,15 @@ const getGwei = (chainId) => {
                 return resolve(res[0]['gwei'])
             }
         })
+    })
+}
+
+const submitWithdraw = (depositHash) => {
+    return new Promise((resolve, reject) => {
+        connection.query("UPDATE log SET `withdrawSubmit` = 1 WHERE `depositHash` = ?", [depositHash], function (error, results, fields) {
+            if (error) return reject(error)
+            return resolve(results)
+        });
     })
 }
 
@@ -178,10 +191,11 @@ async function main() {
                 const log = await getLog(event.transactionHash)
 
                 const fee = (value * pair['bridgeFee'] / 100).toFixed(pair['decimal'])
-                const amount = ethers.utils.parseUnits((value - fee).toFixed(pair['decimal']), pair['decimal'])
+                const amountStr = (value - fee).toFixed(pair['decimal'])
+                const amount = ethers.utils.parseUnits(amountStr, pair['decimal'])
 
                 if (typeof (log) === "undefined") {
-                    logSave(pair.id, recipient, value, item.chainId, toChainId, event.transactionHash, fee.toString(), amount.toString())
+                    logSave(pair.id, recipient, value, item.chainId, toChainId, event.transactionHash, fee.toString(), amountStr)
                     // console.log(`[主网币][跨链][成功] ${value} 个 ${pair.name} 从 ${pair.fromChain} 到 ${pair.toChain}`)
                 }
                 const isCheck = await getIsCheck()
@@ -196,10 +210,12 @@ async function main() {
                                 tryNum += 1
                                 const gwei = await getGwei(toChainId)
                                 // console.log(item.chainId, event.transactionHash, "0x0000000000000000000000000000000000000000", recipient, amount, true, !isMain)
-                                await manager['submitTransaction'](item.chainId, event.transactionHash, "0x0000000000000000000000000000000000000000", recipient, amount, true, !isMain, {
+                                const tx = await manager['submitTransaction'](item.chainId, event.transactionHash, "0x0000000000000000000000000000000000000000", recipient, amount, true, !isMain, {
                                     gasPrice: ethers.utils.parseUnits(gwei + "", 'gwei'),
                                     // gasLimit: 200000
                                 })
+                                await tx.wait()
+                                await submitWithdraw(event.transactionHash)
                                 console.log("SubmitTransaction")
                                 isSuccess = true
                             } catch (e) {
@@ -241,10 +257,12 @@ async function main() {
                                     tryNum += 1
                                     // console.log(item.chainId, event.transactionHash, fromToken, recipient, amount,false,!pair['isMain'])
                                     const gwei = await getGwei(toChainId)
-                                    await manager['submitTransaction'](item.chainId, event.transactionHash, fromToken, recipient, amount, false, !pair['isMain'], {
+                                    const tx = await manager['submitTransaction'](item.chainId, event.transactionHash, fromToken, recipient, amount, false, !pair['isMain'], {
                                         gasPrice: ethers.utils.parseUnits(gwei + "", 'gwei'),
                                         // gasLimit: 200000
                                     })
+                                    await tx.wait()
+                                    await submitWithdraw(event.transactionHash)
                                     console.log("SubmitTransaction")
                                     // console.log(event.transactionHash, tx.hash)
                                     isSuccess = true
