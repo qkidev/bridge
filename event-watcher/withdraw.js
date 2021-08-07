@@ -102,6 +102,10 @@ const withdraw = async () => {
 
     const logs = await getUnWithdrawLog()
     for (const log of logs) {
+        // 60秒以内的跳过
+        const now = Math.round(new Date() / 1000)
+        if ((now - log['depositTime']) < 60) continue
+
         const pair = await getPairById(log['pairId'])
         if (!isCheck || pair['limit'] === 0 || log['value'] <= pair['limit']) {
             const manager = managers[log['toChain']]
