@@ -1,7 +1,13 @@
 exports.bridge = () => {
     return [
         {
-            "inputs": [],
+            "inputs": [
+                {
+                    "internalType": "address",
+                    "name": "_owner",
+                    "type": "address"
+                }
+            ],
             "stateMutability": "nonpayable",
             "type": "constructor"
         },
@@ -591,6 +597,11 @@ exports.bridgeManager = () => {
                 {
                     "internalType": "address",
                     "name": "_bridgeAddress",
+                    "type": "address"
+                },
+                {
+                    "internalType": "address",
+                    "name": "_owner",
                     "type": "address"
                 }
             ],

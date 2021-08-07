@@ -29,6 +29,8 @@ class ChainController extends AdminController
             $grid->column('title');
             $grid->column('bridge');
             $grid->column('bridge_manager');
+            $grid->column('syncNumber');
+            $grid->column('syncLimit');
 
             $grid->filter(function (Grid\Filter $filter) {
                 $filter->equal('id');
@@ -76,6 +78,8 @@ class ChainController extends AdminController
             $form->text('bridge');
             $form->text('bridge_manager');
             $form->text('gwei');
+            $form->text('syncNumber');
+            $form->text('syncLimit');
         });
     }
 }
