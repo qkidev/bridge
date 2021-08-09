@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class AddLogColumns extends Migration
+class AddOverMaxToLog extends Migration
 {
     /**
      * Run the migrations.
@@ -14,9 +14,7 @@ class AddLogColumns extends Migration
     public function up()
     {
         Schema::table('log', function (Blueprint $table) {
-//            $table->string('fee')->default("");
-//            $table->string('amount')->default("");
-//            $table->tinyInteger('withdrawSubmit')->default(0);
+            $table->tinyInteger('overMax')->unsigned()->default(0)->comment('是否超过的最大值');
         });
     }
 
@@ -27,6 +25,8 @@ class AddLogColumns extends Migration
      */
     public function down()
     {
-        //
+        Schema::table('log', function (Blueprint $table) {
+            $table->dropColumn("overMax");
+        });
     }
 }
