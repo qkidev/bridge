@@ -31,7 +31,7 @@ const getChains = () => {
 
 const getUnWithdrawLog = () => {
     return new Promise((resolve, reject) => {
-        connection.query('SELECT * FROM log WHERE `withdrawHash`is null AND `withdrawSubmit` = 0 ORDER BY `id` DESC', (error, results, fields) => {
+        connection.query('SELECT * FROM log WHERE `withdrawHash`is null AND `withdrawSubmit` = 0 AND `overMax` = 0 ORDER BY `id` DESC', (error, results, fields) => {
             if (error) {
                 return reject(error)
             } else {
@@ -102,12 +102,18 @@ const withdraw = async () => {
 
     const logs = await getUnWithdrawLog()
     for (const log of logs) {
+        console.log(log)
         // 60秒以内的跳过
         const now = Math.round(new Date() / 1000)
         if ((now - log['depositTime']) < 60) continue
 
         const pair = await getPairById(log['pairId'])
-        if (!isCheck || pair['limit'] === 0 || log['value'] <= pair['limit']) {
+
+        let overLimit = log['value'] > pair['limit']
+        if (pair['limit'] === 0) overLimit = false
+        if (!isCheck) overLimit = false
+
+        if (!overLimit) {
             const manager = managers[log['toChain']]
             if (manager) {
                 let isSuccess = false
@@ -125,7 +131,7 @@ const withdraw = async () => {
                         console.log("SubmitTransaction")
                         isSuccess = true
                     } catch (e) {
-                        console.log(e.message)
+                        // console.log(e.message)
                         console.log(tryNum)
                         if (tryNum > 10) isSuccess = true
                     }

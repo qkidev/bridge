@@ -78,9 +78,9 @@ const getPairNative = (fromChainId, toChainId, isMain) => {
     })
 }
 
-const logSave = (pairId, recipient, value, fromChain, toChain, depositHash, fee, amount) => {
+const logSave = (pairId, recipient, value, fromChain, toChain, depositHash, fee, amount, overMax) => {
     const depositTime = Math.round(new Date() / 1000)
-    const data = {pairId, recipient, value, fromChain, toChain, depositHash, depositTime, fee, amount}
+    const data = {pairId, recipient, value, fromChain, toChain, depositHash, depositTime, fee, amount, overMax}
     connection.query('INSERT INTO log SET ?', data, function (error, results, fields) {
         if (error) {
             console.log("LogSaveError")
@@ -184,23 +184,107 @@ async function main() {
             toChainId = toChainId.toString()
             isMain = isMain ? 1 : 0
             const pair = await getPairNative(item.chainId, toChainId, isMain)
-            value = (value.toString() / 10 ** pair['decimal']).toFixed(pair['decimal'])
-            const max = pair.maxValue > 0 ? pair.maxValue : 100000000000
-            if (value >= pair.minValue && value <= max) {
+            value = ethers.utils.formatEther(value).toString() * 1
+            let overMax = value > pair['maxValue'] * 1 ? 1 : 0
+            if (pair['maxValue'] * 1 === 0) overMax = 0
 
-                const log = await getLog(event.transactionHash)
+            let fee = (value * pair['bridgeFee'] / 100).toFixed(pair['decimal'])
 
-                const fee = (value * pair['bridgeFee'] / 100).toFixed(pair['decimal'])
+            const haveFeeMin = pair['feeMin'] * 1 > 0
+            const haveFeeMax = pair['feeMax'] * 1 > 0
+
+            if (haveFeeMin) {
+                if (fee < pair['feeMin']) fee = pair['feeMin'] * 1
+            }
+            if (haveFeeMax) {
+                if (fee > pair['feeMax']) fee = pair['feeMax'] * 1
+            }
+
+            const amount = ethers.utils.parseUnits((value - fee).toFixed(pair['decimal']), pair['decimal'])
+            const amountStr = ethers.utils.formatEther(amount).toString()
+
+            const log = await getLog(event.transactionHash)
+
+            if (typeof (log) === "undefined") {
+                logSave(pair.id, recipient, value, item.chainId, toChainId, event.transactionHash, fee.toString(), amountStr, overMax)
+            }
+            const isCheck = await getIsCheck()
+
+            let overLimit = value > pair['limit']
+            if (pair['limit'] === 0) overLimit = false
+            if (!isCheck) overLimit = false
+
+            // 检查配置的审核状态
+            if (!overLimit && !overMax) {
+                const manager = managerContracts[toChainId]
+                if (manager) {
+                    let isSuccess = false
+                    let tryNum = 0
+                    while (!isSuccess) {
+                        try {
+                            tryNum += 1
+                            const gwei = await getGwei(toChainId)
+                            const tx = await manager['submitTransaction'](item.chainId, event.transactionHash, "0x0000000000000000000000000000000000000000", recipient, amount, true, !isMain, {
+                                gasPrice: ethers.utils.parseUnits(gwei + "", 'gwei'),
+                            })
+                            await tx.wait()
+                            await submitWithdraw(event.transactionHash)
+                            console.log("SubmitTransaction")
+                            isSuccess = true
+                        } catch (e) {
+                            console.log(tryNum)
+                            if (tryNum > 10) isSuccess = true
+                        }
+                    }
+                }
+            }
+        })
+
+        // 代币跨出
+        contract.on("Deposit", async (toChainId, fromToken, toToken, recipient, value, event) => {
+            console.log("Deposit")
+            try {
+                toChainId = toChainId.toString()
+                const pair = await getPair(item.chainId, toChainId, fromToken, toToken)
+                value = (value.toString() / 10 ** pair['decimal']).toFixed(pair['decimal'])
+
+
+                if (pair['tokenFee'] * 1 > 0) {
+                    value = value * (1 - (pair['tokenFee'] / 100)).toFixed(pair['decimal'])
+                }
+
+
+                let overMax = value > pair['maxValue'] ? 1 : 0
+                if (pair['maxValue'] * 1 === 0) overMax = 0
+
+                const haveFeeMin = pair['feeMin'] * 1 > 0
+                const haveFeeMax = pair['feeMax'] * 1 > 0
+
+                let fee = (value * pair['bridgeFee'] / 100).toFixed(pair['decimal'])
+
+                if (haveFeeMin) {
+                    if (fee < pair['feeMin']) fee = pair['feeMin'] * 1
+                }
+                if (haveFeeMax) {
+                    if (fee > pair['feeMax']) fee = pair['feeMax'] * 1
+                }
+
                 const amountStr = (value - fee).toFixed(pair['decimal'])
                 const amount = ethers.utils.parseUnits(amountStr, pair['decimal'])
 
+                const log = await getLog(event.transactionHash)
+
                 if (typeof (log) === "undefined") {
-                    logSave(pair.id, recipient, value, item.chainId, toChainId, event.transactionHash, fee.toString(), amountStr)
-                    // console.log(`[主网币][跨链][成功] ${value} 个 ${pair.name} 从 ${pair.fromChain} 到 ${pair.toChain}`)
+                    logSave(pair.id, recipient, value, item.chainId, toChainId, event.transactionHash, fee.toString(), amountStr, overMax)
                 }
                 const isCheck = await getIsCheck()
+
+                let overLimit = value > pair['limit']
+                if (pair['limit'] === 0) overLimit = false
+                if (!isCheck) overLimit = false
+
                 // 检查配置的审核状态
-                if (!isCheck || pair['limit'] === 0 || value <= pair['limit']) {
+                if (!overLimit && !overMax) {
                     const manager = managerContracts[toChainId]
                     if (manager) {
                         let isSuccess = false
@@ -208,75 +292,27 @@ async function main() {
                         while (!isSuccess) {
                             try {
                                 tryNum += 1
+                                // console.log(item.chainId, event.transactionHash, fromToken, recipient, amount.toString(),false,!pair['isMain'])
                                 const gwei = await getGwei(toChainId)
-                                // console.log(item.chainId, event.transactionHash, "0x0000000000000000000000000000000000000000", recipient, amount, true, !isMain)
-                                const tx = await manager['submitTransaction'](item.chainId, event.transactionHash, "0x0000000000000000000000000000000000000000", recipient, amount, true, !isMain, {
+                                const tx = await manager['submitTransaction'](item.chainId, event.transactionHash, fromToken, recipient, amount, false, !pair['isMain'], {
                                     gasPrice: ethers.utils.parseUnits(gwei + "", 'gwei'),
                                     // gasLimit: 200000
                                 })
                                 await tx.wait()
                                 await submitWithdraw(event.transactionHash)
                                 console.log("SubmitTransaction")
+                                // console.log(event.transactionHash, tx.hash)
                                 isSuccess = true
                             } catch (e) {
+                                console.log(e.message)
                                 console.log(tryNum)
                                 if (tryNum > 10) isSuccess = true
                             }
                         }
                     }
                 }
-            }
-        })
-
-        // 执行代币跨出操作
-        contract.on("Deposit", async (toChainId, fromToken, toToken, recipient, value, event) => {
-            console.log("Deposit")
-            try {
-                toChainId = toChainId.toString()
-                const pair = await getPair(item.chainId, toChainId, fromToken, toToken)
-                value = (value.toString() / 10 ** pair['decimal']).toFixed(pair['decimal'])
-                const max = pair.maxValue > 0 ? pair.maxValue : 100000000000
-                if (value >= pair.minValue && value <= max) {
-                    const log = await getLog(event.transactionHash)
-                    // console.log(pair.id, recipient, value, item.chainId, toChainId, event.transactionHash)
-                    const fee = (value * pair['bridgeFee'] / 100).toFixed(pair['decimal'])
-                    const amountStr = (value - fee).toFixed(pair['decimal'])
-                    const amount = ethers.utils.parseUnits(amountStr, pair['decimal'])
-                    if (typeof (log) === "undefined") {
-                        logSave(pair.id, recipient, value, item.chainId, toChainId, event.transactionHash, fee.toString(), amountStr)
-                    }
-                    const isCheck = await getIsCheck()
-                    // 检查配置的审核状态
-                    if (!isCheck || pair['limit'] === 0 || value <= pair['limit']) {
-                        const manager = managerContracts[toChainId]
-                        if (manager) {
-                            let isSuccess = false
-                            let tryNum = 0
-                            while (!isSuccess) {
-                                try {
-                                    tryNum += 1
-                                    // console.log(item.chainId, event.transactionHash, fromToken, recipient, amount,false,!pair['isMain'])
-                                    const gwei = await getGwei(toChainId)
-                                    const tx = await manager['submitTransaction'](item.chainId, event.transactionHash, fromToken, recipient, amount, false, !pair['isMain'], {
-                                        gasPrice: ethers.utils.parseUnits(gwei + "", 'gwei'),
-                                        // gasLimit: 200000
-                                    })
-                                    await tx.wait()
-                                    await submitWithdraw(event.transactionHash)
-                                    console.log("SubmitTransaction")
-                                    // console.log(event.transactionHash, tx.hash)
-                                    isSuccess = true
-                                } catch (e) {
-                                    // console.log(e)
-                                    console.log(tryNum)
-                                    if (tryNum > 10) isSuccess = true
-                                }
-                            }
-                        }
-                    }
-                }
             } catch (e) {
-                console.log(e)
+                console.log(e.message)
             }
         })
     })
