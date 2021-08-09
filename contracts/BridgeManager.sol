@@ -99,6 +99,26 @@ contract BridgeManager {
         return false;
     }
 
+    //查询id
+    function getTransactionId(uint fromChainId, bytes memory txHash, address toToken, address recipient, uint256 amount) pure public returns(bytes32){
+         // 根据来源跨链交易生成唯一hash id，作为这笔跨链的id
+        bytes32 transactionId = keccak256(abi.encodePacked(fromChainId, txHash, toToken, recipient, amount));
+
+        return transactionId;
+    }
+
+
+    // 查询一笔交易是否跨链成功
+    function isExecuted(uint fromChainId, bytes memory txHash, address toToken, address recipient, uint256 amount) view public returns (bool){
+        // 根据来源跨链交易生成唯一hash id，作为这笔跨链的id
+        bytes32 transactionId = keccak256(abi.encodePacked(fromChainId, txHash, toToken, recipient, amount));
+
+        if (transactions[transactionId].executed)
+            return true;
+        else
+            return false;
+    }
+
     /// @dev 提交一个跨链请求
     /// @param fromChainId 来源链id
     /// @param txHash      来源链交易hash
@@ -111,6 +131,10 @@ contract BridgeManager {
         if (confirmations[transactionId][msg.sender])
             return true;
 
+        //如果已经成功跨链，直接返回成功
+        if (transactions[transactionId].executed)
+            return true;
+ 
         transactions[transactionId] = Transaction({
         fromChainId : fromChainId,
         txHash : txHash,
