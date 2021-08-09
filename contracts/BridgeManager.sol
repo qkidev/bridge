@@ -126,6 +126,8 @@ contract BridgeManager {
     /// @param recipient   接收地址
     /// @param amount      数量
     function submitTransaction(uint fromChainId, bytes memory txHash, address toToken, address recipient, uint256 amount, bool isNative, bool isMain) public returns (bool) {
+        require(isManager[msg.sender] == true, "only manger");
+
         // 根据来源跨链交易生成唯一hash id，作为这笔跨链的id
         bytes32 transactionId = keccak256(abi.encodePacked(fromChainId, txHash, toToken, recipient, amount));
         if (confirmations[transactionId][msg.sender])
@@ -134,7 +136,7 @@ contract BridgeManager {
         //如果已经成功跨链，直接返回成功
         if (transactions[transactionId].executed)
             return true;
- 
+
         transactions[transactionId] = Transaction({
         fromChainId : fromChainId,
         txHash : txHash,
