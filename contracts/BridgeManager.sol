@@ -40,7 +40,7 @@ contract BridgeManager {
     // multiSigns[networkID][txHash] = managers[]
     mapping(uint => mapping(bytes => address[])) public multiSigns;
 
-    constructor(uint _signLimit, address _bridgeAddress,address _owner) {
+    constructor(uint _signLimit, address _bridgeAddress, address _owner) {
         owner = _owner;
         signLimit = _signLimit;
         bridgeAddress = _bridgeAddress;
@@ -69,17 +69,35 @@ contract BridgeManager {
         signLimit = num;
     }
 
+    // 添加管理员
     function managerAdd(address _address) public onlyOwner {
-        Managers.push(_address);
+        bool push = true;
+        uint256 i = 0;
+        while (push && i < Managers.length) {
+            if (Managers[i] == token) push = false;
+            i++;
+        }
+        if (push) items.push(_address);
         isManager[_address] = true;
     }
 
+    // 删除管理员
     function managerDel(address _address) public onlyOwner {
-        for (uint i = 0; i < Managers.length; i++)
-            if (Managers[i] == _address)
-                Managers[i] = address(0);
-
+        address[] memory newManagers;
+        uint256 j = 0;
+        for (uint256 i = 0; i < Managers.length; i++) {
+            if (Managers[i] != _address) {
+                newManagers[j] = Managers[i];
+                j++;
+            }
+        }
+        Managers = newManagers;
         isManager[_address] = false;
+    }
+
+
+    function allManagersLength() public view returns (uint){
+        return Managers.length;
     }
 
     /// @dev Returns the confirmation status of a transaction.
@@ -100,8 +118,8 @@ contract BridgeManager {
     }
 
     //查询id
-    function getTransactionId(uint fromChainId, bytes memory txHash, address toToken, address recipient, uint256 amount) pure public returns(bytes32){
-         // 根据来源跨链交易生成唯一hash id，作为这笔跨链的id
+    function getTransactionId(uint fromChainId, bytes memory txHash, address toToken, address recipient, uint256 amount) pure public returns (bytes32){
+        // 根据来源跨链交易生成唯一hash id，作为这笔跨链的id
         bytes32 transactionId = keccak256(abi.encodePacked(fromChainId, txHash, toToken, recipient, amount));
 
         return transactionId;
