@@ -74,10 +74,10 @@ contract BridgeManager {
         bool push = true;
         uint256 i = 0;
         while (push && i < Managers.length) {
-            if (Managers[i] == token) push = false;
+            if (Managers[i] == _address) push = false;
             i++;
         }
-        if (push) items.push(_address);
+        if (push) Managers.push(_address);
         isManager[_address] = true;
     }
 
