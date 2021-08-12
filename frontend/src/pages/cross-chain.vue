@@ -72,10 +72,15 @@
         </div>
         <div class="list_wrap">
           <div class="flex_h_center_start popup_item" v-for="(item, index) in tokenList" :key="index" @click="setToken(item)">
-            <img :src="item.icon" alt="" class="coin_logo_big" />
+
+
+            <img v-if="item.icon" :src="item.icon" alt="" class="coin_logo_big" />
+            <img v-if="!item.icon && item.fromChain === 20181205" src="../assets/icon/20181205.png" alt="" class="coin_logo_big" />
+            <img v-if="!item.icon && item.fromChain === 128" src="../assets/icon/128.png" alt="" class="coin_logo_big" />
             <div class="flex_v_center_start flex1">
               <span class="fStyle28_333333_w5 upper-case">{{item.name}}</span>
               <span class="fStyle22_999999">{{item.title}}</span>
+              <span class="fStyle22_999999">{{item.fromToken}}</span>
             </div>
             <i class="iconfont icon-select-bold checked" v-if="item.fromToken == token.fromToken"></i>
           </div>
@@ -247,6 +252,8 @@ export default {
             name: i,
             icon: first ? first.icon : '',
             fromToken: first ? first.fromToken : '',
+            toToken: first?first.toToken:'',
+            fromChain: first?first.fromChain:'',
             title: first ? first.title : '',
             networks: (json.data || [])[i]
           }
