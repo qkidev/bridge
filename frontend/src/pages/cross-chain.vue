@@ -80,7 +80,7 @@
             <div class="flex_v_center_start flex1">
               <span class="fStyle28_333333_w5 upper-case">{{item.name}}</span>
               <span class="fStyle22_999999">{{item.title}}</span>
-              <span class="fStyle22_999999">{{item.fromToken}}</span>
+              <span class="fStyle22_999999">{{shortAddress(item.fromToken)}}</span>
             </div>
             <i class="iconfont icon-select-bold checked" v-if="item.fromToken == token.fromToken"></i>
           </div>
@@ -200,6 +200,9 @@ export default {
     }
   },
   methods: {
+    shortAddress(address){
+      return address.slice(0,14)+"****"+address.slice(-14)
+    },
     async init() {
       let customHttpProvider = new ethers.providers.Web3Provider(
         window.ethereum
