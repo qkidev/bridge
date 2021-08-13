@@ -203,6 +203,8 @@ export default {
           return url
       },
     shortAddress(address){
+        if (address === "0x0000000000000000000000000000000000000000")
+          return "主网币"
       return address.slice(0,14)+"****"+address.slice(-14)
     },
     async init() {
