@@ -13,7 +13,7 @@
     </div>
     <div class="section flex_h_between_center mt_20" @click="showAssetModel = true">
       <div class="flex1 flex_h_center_start" v-if="token != null">
-        <img :src="token.icon" alt="" class="coin_logo" />
+        <img :src="requireIcon(token.icon,token.fromChain)" alt="" class="coin_logo" />
         <span class="fStyle30_ffffff upper-case">{{token.name}}</span>
       </div>
       <div class="flex1 flex_h_center_start" v-else>
@@ -72,11 +72,7 @@
         </div>
         <div class="list_wrap">
           <div class="flex_h_center_start popup_item" v-for="(item, index) in tokenList" :key="index" @click="setToken(item)">
-
-
-            <img v-if="item.icon" :src="item.icon" alt="" class="coin_logo_big" />
-            <img v-if="!item.icon && item.fromChain === 20181205" src="../assets/icon/20181205.png" alt="" class="coin_logo_big" />
-            <img v-if="!item.icon && item.fromChain === 128" src="../assets/icon/128.png" alt="" class="coin_logo_big" />
+              <img :src="requireIcon(item.icon,item.fromChain)" alt="" class="coin_logo_big" />
             <div class="flex_v_center_start flex1">
               <span class="fStyle28_333333_w5 upper-case">{{item.name}}</span>
               <span class="fStyle22_999999">{{item.title}}</span>
@@ -200,6 +196,12 @@ export default {
     }
   },
   methods: {
+      requireIcon(url, chainId) {
+          if (!url) {
+              url = require(`../assets/icon/${chainId}.png`)
+          }
+          return url
+      },
     shortAddress(address){
       return address.slice(0,14)+"****"+address.slice(-14)
     },
@@ -603,7 +605,7 @@ export default {
       border-radius: 10px;
     }
   }
-  
+
   $fColor_4570B3: #4570B3;
   $fColor_ffffff: #ffffff;
   $fColor_5E81BB: #5E81BB;
@@ -737,7 +739,7 @@ export default {
     margin-top: 25px;
     margin-bottom: 25px;
   }
-  
+
   @font-face {
     font-family: 'iconfont';  /* Project id 2611671 */
     src: url('//at.alicdn.com/t/font_2611671_qucasfx1j2.woff2?t=1623738550612') format('woff2'),
