@@ -207,7 +207,7 @@ export default {
         if (address === "0x0000000000000000000000000000000000000000"){
           str = ""
         }else{
-          str = address.slice(0,14)+"****"+address.slice(-14)
+          str = address.slice(0,12)+"****"+address.slice(-12)
         }
       if (isNative) str+=" [ 主网币 ]"
       return str
