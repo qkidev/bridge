@@ -76,7 +76,7 @@
             <div class="flex_v_center_start flex1">
               <span class="fStyle28_333333_w5 upper-case">{{item.name}}</span>
               <span class="fStyle22_999999">{{item.title}}</span>
-              <span class="fStyle22_999999">{{shortAddress(item.fromToken)}}</span>
+              <span class="fStyle22_999999">{{shortAddress(item.fromToken,item.isNative)}}</span>
             </div>
             <i class="iconfont icon-select-bold checked" v-if="item.fromToken == token.fromToken"></i>
           </div>
@@ -202,10 +202,15 @@ export default {
           }
           return url
       },
-    shortAddress(address){
-        if (address === "0x0000000000000000000000000000000000000000")
-          return "主网币"
-      return address.slice(0,14)+"****"+address.slice(-14)
+    shortAddress(address,isNative){
+        let str = ""
+        if (address === "0x0000000000000000000000000000000000000000"){
+          str = ""
+        }else{
+          str = address.slice(0,14)+"****"+address.slice(-14)
+        }
+      if (isNative) str+=" [ 主网币 ]"
+      return str
     },
     async init() {
       let customHttpProvider = new ethers.providers.Web3Provider(
@@ -262,6 +267,8 @@ export default {
             toToken: first?first.toToken:'',
             fromChain: first?first.fromChain:'',
             title: first ? first.title : '',
+            isNative:first?first.isNative:"",
+            isMain:first?first.isMain:"",
             networks: (json.data || [])[i]
           }
           tempList.push(obj)
