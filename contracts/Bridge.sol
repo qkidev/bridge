@@ -68,17 +68,28 @@ contract BridgeAdmin {
     }
 
     // 添加支持的主网币
-    function nativeInsert(uint toChainId, bool isRun, bool isMain, address fromAddress) external onlyAdmin {
-        if (isMain) {
-            require(fromAddress == address(0), "Bridge Admin: main native have not token");
-        } else {
-            require(fromAddress != address(0), "Bridge Admin: minor native must have token");
+    function nativeInsert(uint toChainId, address fromAddress,bool isRun) external onlyAdmin {
+        bool isMain = false;
+        if(fromAddress == address(0)){
+            isMain = true;
         }
         natives[toChainId][isMain] = Token({
         isMain : isMain,
         isRun : isRun,
         local : fromAddress
         });
+    }
+
+    function switchTokenMain(uint toChainId, address toToken) external onlyAdmin returns (bool){
+        Token storage pair = tokens[toChainId][toToken];
+        require(pair.local != address(0),"Bridge Admin: pair is not exist");
+        bool isMain = pair.isMain? false : true;
+        tokens[toChainId][toToken] = Token({
+        isRun : pair.isRun,
+        isMain : isMain,
+        local : pair.local
+        });
+        return true;
     }
 
     // 设置代币状态
@@ -159,6 +170,7 @@ contract Bridge is BridgeAdmin {
         owner = newOwner;
     }
 
+
     function deposit(
         uint chainId,
         address toToken,
@@ -166,10 +178,10 @@ contract Bridge is BridgeAdmin {
     ) public canBridge(chainId, toToken) {
         Token storage local = tokens[chainId][toToken];
         IERC20 token = IERC20(local.local);
-        if(local.isMain){
+        if (local.isMain) {
             // 主链
             token.transferFrom(msg.sender, address(this), value);
-        }else {
+        } else {
             // 侧链 燃烧
             token.burn(msg.sender, value);
         }
