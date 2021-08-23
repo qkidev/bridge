@@ -92,7 +92,7 @@ const withdraw = async () => {
     const managers = {}
 
     for (const chain of chains) {
-        gweis[chain.chainId] = chain.gwei + ""
+        gweis[chain.chainId] = chain['manager_gwei'] + ""
         const provider = new ethers.providers.JsonRpcProvider(chain.url)
         const number = await provider.getBlockNumber()
         console.log(number)

@@ -25,6 +25,7 @@ class ChainController extends AdminController
             $grid->column('name');
             $grid->column('status');
             $grid->column('gwei');
+            $grid->column('manager_gwei');
             $grid->column('sort');
             $grid->column('title');
             $grid->column('bridge');
@@ -78,6 +79,7 @@ class ChainController extends AdminController
             $form->text('bridge');
             $form->text('bridge_manager');
             $form->text('gwei');
+            $form->text('manager_gwei');
             $form->text('syncNumber');
             $form->text('syncLimit');
         });
