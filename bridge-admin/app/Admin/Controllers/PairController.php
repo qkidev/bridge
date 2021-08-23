@@ -23,6 +23,7 @@ class PairController extends AdminController
         Admin::js("/js/ethers-5.2.umd.min.js");
         return Grid::make(new Pair(), function (Grid $grid) {
             $grid->column('id')->sortable();
+            $grid->column('isStop');
             $grid->column('fromChain');
             $grid->column('toChain');
             $grid->column('name');
@@ -32,7 +33,7 @@ class PairController extends AdminController
             $grid->column('tokenFee');
             $grid->column('bridgeFee');
             $grid->column('decimal');
-            $grid->column('icon')->image("",50,50);
+            $grid->column('icon')->image("", 50, 50);
             $grid->column('isMain');
             $grid->column('isNative');
             $grid->column('minValue');
@@ -86,7 +87,7 @@ class PairController extends AdminController
      */
     protected function form()
     {
-        $chainIds = Chain::query()->pluck("title","chainId")->toArray();
+        $chainIds = Chain::query()->pluck("title", "chainId")->toArray();
 
         return Form::make(new Pair(), function (Form $form) use ($chainIds) {
             $form->display('id');
@@ -109,6 +110,7 @@ class PairController extends AdminController
                 ->default(0);
             $form->switch('isMain')->default(0);
             $form->switch('isNative')->default(0);
+            $form->switch('isStop')->default(0);
             $form->text('minValue')->default(0);
             $form->text('limit')->default(0);
             $form->image('icon');

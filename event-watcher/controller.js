@@ -284,7 +284,7 @@ async function main() {
                 if (!isCheck) overLimit = false
 
                 // 检查配置的审核状态
-                if (!overLimit && !overMax) {
+                if (!overLimit && !overMax && !pair['isStop']) {
                     const manager = managerContracts[toChainId]
                     if (manager) {
                         let isSuccess = false

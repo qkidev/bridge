@@ -102,7 +102,6 @@ const withdraw = async () => {
 
     const logs = await getUnWithdrawLog()
     for (const log of logs) {
-        console.log(log)
         // 60秒以内的跳过
         const now = Math.round(new Date() / 1000)
         if ((now - log['depositTime']) < 60) continue
@@ -113,7 +112,7 @@ const withdraw = async () => {
         if (pair['limit'] === 0) overLimit = false
         if (!isCheck) overLimit = false
 
-        if (!overLimit) {
+        if (!overLimit && !pair['isStop']) {
             const manager = managers[log['toChain']]
             if (manager) {
                 let isSuccess = false
@@ -131,7 +130,6 @@ const withdraw = async () => {
                         console.log("SubmitTransaction")
                         isSuccess = true
                     } catch (e) {
-                        // console.log(e.message)
                         console.log(tryNum)
                         if (tryNum > 10) isSuccess = true
                     }

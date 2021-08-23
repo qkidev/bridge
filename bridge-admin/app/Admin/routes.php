@@ -26,4 +26,5 @@ Route::group([
     $router->resource('logs', LogController::class);
     $router->resource('settings', SettingController::class);
     $router->resource('balances', BalanceController::class);
+    $router->resource('amount-errors', AmountErrorController::class);
 });
