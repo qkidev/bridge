@@ -105,7 +105,7 @@ const getGwei = (chainId) => {
             if (err) {
                 process.exit(0);
             } else {
-                return resolve(res[0]['gwei'])
+                return resolve(res[0]['manager_gwei'])
             }
         })
     })
