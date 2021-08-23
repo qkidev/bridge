@@ -19,7 +19,8 @@ return [
         'decimal' => 'Token精度',
         'sort' => '排序',
         'isNative' => '是否主网币',
-        'limit'=>'审核数额下限'
+        'limit' => '审核数额下限',
+        'isStop' => '停止跨链',
     ],
     'options' => [
     ],
