@@ -113,7 +113,7 @@ class PairController extends AdminController
             $form->switch('isStop')->default(0);
             $form->text('minValue')->default(0);
             $form->text('limit')->default(0);
-            $form->image('icon');
+            $form->text('icon');
             $form->text('sort')->default(0);
         });
     }
