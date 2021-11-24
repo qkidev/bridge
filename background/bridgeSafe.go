@@ -7,9 +7,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/gogf/gf/frame/g"
-	"github.com/gogf/gf/os/gcron"
+	"github.com/gogf/gf/os/gtimer"
 	"github.com/gogf/gf/util/gconv"
 	"math"
+	"time"
 )
 
 func bridgeSafe() {
@@ -20,19 +21,19 @@ func bridgeSafe() {
 			decimal := gconv.Int(pair.GMap().Get("decimal"))
 			isNative := pair.GMap().Get("isNative")
 			fromChain, _ := g.Model("chain").One("chainId", pair.GMap().Get("fromChain"))
-			fromProvider, _ := ethclient.Dial(gconv.String(fromChain.GMap().Get("url")))
+			fromProvider, _ := ethclient.Dial(fromChain.GMap().GetVar("url").String())
 			var fromBalance uint64
 			if gconv.Int(isNative) == 0 {
-				fromToken, _ := token.NewToken(common.HexToAddress(gconv.String(pair.GMap().Get("fromToken"))), fromProvider)
-				fromBalanceBig, _ := fromToken.BalanceOf(nil, common.HexToAddress(gconv.String(fromChain.GMap().Get("bridge"))))
+				fromToken, _ := token.NewToken(common.HexToAddress(pair.GMap().GetVar("fromToken").String()), fromProvider)
+				fromBalanceBig, _ := fromToken.BalanceOf(nil, common.HexToAddress(fromChain.GMap().GetVar("bridge").String()))
 				fromBalance = fromBalanceBig.Uint64()
 			} else {
-				fromBalanceBig, _ := fromProvider.BalanceAt(context.Background(), common.HexToAddress(gconv.String(fromChain.GMap().Get("bridge"))), nil)
+				fromBalanceBig, _ := fromProvider.BalanceAt(context.Background(), common.HexToAddress(fromChain.GMap().GetVar("bridge").String()), nil)
 				fromBalance = fromBalanceBig.Uint64()
 			}
 			toChain, _ := g.Model("chain").One("chainId", pair.GMap().Get("toChain"))
-			toProvider, _ := ethclient.Dial(gconv.String(toChain.GMap().Get("url")))
-			toToken, _ := token.NewToken(common.HexToAddress(gconv.String(pair.GMap().Get("toToken"))), toProvider)
+			toProvider, _ := ethclient.Dial(toChain.GMap().GetVar("url").String())
+			toToken, _ := token.NewToken(common.HexToAddress(pair.GMap().GetVar("toToken").String()), toProvider)
 			toBalance, _ := toToken.TotalSupply(nil)
 			errNumBig := fromBalance - toBalance.Uint64()
 			g.Model("amount_error").Save(g.Map{
@@ -55,10 +56,10 @@ func formatBalance(num float64, decimal int) string {
 func setPairStop() {
 	errors, _ := g.Model("amount_error").All()
 	for _, record := range errors {
-		limit := gconv.Float64(record.GMap().Get("errLimit"))
+		limit := record.GMap().GetVar("errLimit").Float64()
 		if limit != 0 {
-			errNum := gconv.Float64(record.GMap().Get("errNum"))
-			if math.Abs(errNum) > limit {
+			errNum := record.GMap().GetVar("errNum").Float64()
+			if (errNum + limit) < 0 {
 				g.Model("pair").Update(g.Map{
 					"isStop": 1,
 				}, "name", record.GMap().Get("tokenName"))
@@ -69,9 +70,10 @@ func setPairStop() {
 
 func main() {
 	bridgeSafe()
-	gcron.Add("0 * * * * *", func() {
+	interval := time.Minute
+	gtimer.AddSingleton(interval, func() {
 		bridgeSafe()
 		setPairStop()
-	}, "bridge safe")
+	})
 	select {}
 }

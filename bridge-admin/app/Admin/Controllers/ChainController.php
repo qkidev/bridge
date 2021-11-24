@@ -70,7 +70,7 @@ class ChainController extends AdminController
         return Form::make(new Chain(), function (Form $form) {
             $form->display('id');
             $form->text('chainId');
-            $form->image('icon');
+            $form->text('icon');
             $form->text('name');
             $form->text('sort');
             $form->text('title');
