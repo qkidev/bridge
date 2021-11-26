@@ -14,6 +14,7 @@ class UpdatePairMinvalueMaxvalue extends Migration
     public function up()
     {
         Schema::table('pair', function (Blueprint $table) {
+            $table->dropColumn(["minValue", "maxValue"]);
             $table->decimal('minValue',20,8,true);
             $table->decimal('maxValue',20,8,true);
         });
