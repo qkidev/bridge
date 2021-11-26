@@ -37,7 +37,7 @@ Route::get("items", function (Request $request) {
         ]);
     }
     $token = $request->input("token");
-    $items = Pair::query()->where("fromChain", $fromChain->chainId)->when($token, function (Builder $builder, $fromToken) {
+    $items = Pair::query()->where("fromChain", $fromChain->chainId)->where("isStop",0)->when($token, function (Builder $builder, $fromToken) {
         return $builder->where("fromToken", $fromToken);
     })->orderBy("sort")->get();
     foreach ($items as $item) {
