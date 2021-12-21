@@ -37,6 +37,8 @@ class PairController extends AdminController
             $grid->column('isMain');
             $grid->column('isNative');
             $grid->column('minValue');
+            $grid->column('feeMin');
+            $grid->column('feeMax');
             $grid->column('limit')->editable();
 
             $grid->column('sort');
@@ -115,6 +117,8 @@ class PairController extends AdminController
             $form->text('limit')->default(0);
             $form->text('icon');
             $form->text('sort')->default(0);
+            $form->text('feeMax')->default(0);
+            $form->text('feeMin')->default(0);
         });
     }
 }
