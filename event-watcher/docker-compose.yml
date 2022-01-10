@@ -1,0 +1,31 @@
+version: "3.9"
+    
+services:
+  controller:
+    image: node:latest
+    volumes: 
+      - .:/code
+      - /etc/localtime:/etc/localtime
+    restart: always
+    working_dir: /code
+    command: ["node","controller"]
+  withdraw:
+    image: node:latest
+    volumes: 
+      - .:/code
+      - /etc/localtime:/etc/localtime
+    restart: always
+    working_dir: /code
+    command: ["node","withdraw"]
+  sync:
+    image: node:latest
+    volumes: 
+      - .:/code
+      - /etc/localtime:/etc/localtime
+    restart: always
+    working_dir: /code
+    command: ["node","sync"]
+
+
+    # sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+    #  sudo chmod +x /usr/local/bin/docker-compose
