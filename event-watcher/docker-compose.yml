@@ -3,6 +3,7 @@ version: "3.9"
 services:
   controller:
     image: node:latest
+    container_name: "bridge-controller"
     volumes: 
       - .:/code
       - /etc/localtime:/etc/localtime
@@ -11,6 +12,7 @@ services:
     command: ["node","controller"]
   withdraw:
     image: node:latest
+    container_name: "bridge-withdraw"
     volumes: 
       - .:/code
       - /etc/localtime:/etc/localtime
@@ -19,6 +21,7 @@ services:
     command: ["node","withdraw"]
   sync:
     image: node:latest
+    container_name: "bridge-sync"
     volumes: 
       - .:/code
       - /etc/localtime:/etc/localtime
