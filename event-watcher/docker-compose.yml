@@ -2,7 +2,7 @@ version: "3.9"
     
 services:
   controller:
-    image: node:latest
+    image: node:14-alpine
     container_name: "bridge-controller"
     volumes: 
       - .:/code
@@ -11,7 +11,7 @@ services:
     working_dir: /code
     command: ["node","controller"]
   withdraw:
-    image: node:latest
+    image: node:14-alpine
     container_name: "bridge-withdraw"
     volumes: 
       - .:/code
@@ -20,7 +20,7 @@ services:
     working_dir: /code
     command: ["node","withdraw"]
   sync:
-    image: node:latest
+    image: node:14-alpine
     container_name: "bridge-sync"
     volumes: 
       - .:/code
