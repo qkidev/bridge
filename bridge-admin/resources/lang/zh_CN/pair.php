@@ -23,6 +23,7 @@ return [
         'isStop' => '状态',
         'feeMin' => '最小手续费',
         'feeMax' => '最大手续费',
+        'withdraw_fee' => '已提手续费',
     ],
     'options' => [
     ],

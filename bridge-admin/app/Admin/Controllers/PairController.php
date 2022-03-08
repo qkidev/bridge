@@ -36,6 +36,7 @@ class PairController extends AdminController
             $search = $name || $id;
             $grid->header('<html><b>查看累计手续费,请先在上方搜索币种或筛选交易对</b></html>');
 
+            $grid->column('withdraw_fee')->editable();
             $grid->column('累计手续费')->display(function () use ($search) {
                 $fee = "0";
                 if ($search) {
@@ -133,6 +134,7 @@ EOF;
             $form->text('sort')->default(0);
             $form->text('feeMax')->default(0);
             $form->text('feeMin')->default(0);
+            $form->text('withdraw_fee');
         });
     }
 
@@ -160,6 +162,7 @@ EOF;
             $show->field('toChain');
             $show->field('tokenFee');
             $show->field('toPair');
+            $show->field('withdraw_fee');
         });
     }
 }
