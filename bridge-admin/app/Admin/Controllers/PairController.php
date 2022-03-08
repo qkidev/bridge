@@ -15,7 +15,7 @@ use Dcat\Admin\Widgets\Card;
 
 class PairController extends AdminController
 {
-    const StatusLabel = ['关闭', '开启'];
+    const isStop = ['开启', '关闭'];
     const IsMain = ['否', '是'];
     const IsNative = ['否', '是'];
 
@@ -68,7 +68,7 @@ EOF;
                     return "<div style='padding:10px 10px 0'>$card</div>";
                 });
 
-            $grid->column('isStop')->select(self::StatusLabel);
+            $grid->column('isStop')->select(self::isStop);
             $grid->column('isMain')->select(self::IsMain);
             $grid->column('isNative')->select(self::IsNative);
             $grid->column('minValue')->sortable()->editable();
