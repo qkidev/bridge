@@ -12,4 +12,9 @@ class Log extends Model
     protected $table = 'log';
     public $timestamps = false;
 
+    protected $casts = [
+        "depositTime" => "datetime",
+        "withdrawTime" => "datetime",
+    ];
+
 }

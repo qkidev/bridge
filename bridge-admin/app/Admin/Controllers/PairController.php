@@ -5,14 +5,20 @@ namespace App\Admin\Controllers;
 use App\Admin\Extensions\InsertPair;
 use App\Admin\Repositories\Pair;
 use App\Models\Chain;
+use App\Models\Log;
 use Dcat\Admin\Admin;
 use Dcat\Admin\Form;
 use Dcat\Admin\Grid;
-use Dcat\Admin\Show;
 use Dcat\Admin\Http\Controllers\AdminController;
+use Dcat\Admin\Show;
+use Dcat\Admin\Widgets\Card;
 
 class PairController extends AdminController
 {
+    const StatusLabel = ['关闭', '开启'];
+    const IsMain = ['否', '是'];
+    const IsNative = ['否', '是'];
+
     /**
      * Make a grid builder.
      *
@@ -23,30 +29,59 @@ class PairController extends AdminController
         Admin::js("/js/ethers-5.2.umd.min.js");
         return Grid::make(new Pair(), function (Grid $grid) {
             $grid->column('id')->sortable();
-            $grid->column('isStop');
-            $grid->column('fromChain');
-            $grid->column('toChain');
             $grid->column('name');
-            $grid->column('title');
-            $grid->column('fromToken');
-            $grid->column('toToken');
-            $grid->column('tokenFee');
-            $grid->column('bridgeFee');
-            $grid->column('decimal');
+            $grid->column('累计手续费')->display(function () {
+                $fee = Log::query()->where("pairId", $this->id)->sum("fee");
+                $style = "";
+                if ($fee > 0) {
+                    $style = 'color: red';
+                }
+                return "<html><b style=\"{$style}\">{$fee}</b></html>";
+            });
+
+            $grid->column('fromChain')->using(Chain::getChains());
+            $grid->column('toChain')->using(Chain::getChains());
             $grid->column('icon')->image("", 50, 50);
-            $grid->column('isMain');
-            $grid->column('isNative');
-            $grid->column('minValue');
-            $grid->column('feeMin');
-            $grid->column('feeMax');
-            $grid->column('limit')->editable();
+            $grid->column('content', "详情")
+                ->display('详情') // 设置按钮名称
+                ->expand(function () {
+                    // 返回显示的详情
+                    // 这里返回 content 字段内容，并用 Card 包裹起来
+                    $card = new Card();
+                    $content = <<<EOF
+                       资产名称: $this->title<br/><br/>
+                       跨出Token	: $this->fromToken<br/><br/>
+                       跨入Token: $this->toToken<br/><br/>
+                       转账费(%): $this->tokenFee<br/><br/>
+                       跨链费(%): $this->bridgeFee<br/><br/>
+                       币种精度: $this->decimal<br/><br/>
 
-            $grid->column('sort');
+EOF;
+                    $card->content($content);
+                    return "<div style='padding:10px 10px 0'>$card</div>";
+                });
 
+            $grid->column('isStop')->select(self::StatusLabel);
+            $grid->column('isMain')->select(self::IsMain);
+            $grid->column('isNative')->select(self::IsNative);
+            $grid->column('minValue')->sortable()->editable();
+            $grid->column('feeMin')->sortable()->editable();
+            $grid->column('feeMax')->sortable()->editable();
+            $grid->column('limit')->sortable()->editable();
+            $grid->column('sort')->sortable()->editable();
 
             $grid->filter(function (Grid\Filter $filter) {
-                $filter->equal('id');
+                $filter->expand()->panel();
+                $filter->like("name")->width(3);
+                $filter->equal('id', "交易对")->select(\App\Models\Pair::getPairs())->width(3);
+                $filter->equal('fromChain')->select(Chain::getChains())->width(3);
+                $filter->equal('toChain')->select(Chain::getChains())->width(3);
+                $filter->equal('isStop')->select(self::StatusLabel)->width(3);
+                $filter->equal('isMain')->select(self::IsMain)->width(3);
+                $filter->equal('isNative')->select(self::IsNative)->width(3);
 
+                $filter->like("fromToken")->width(3);
+                $filter->like("toToken")->width(3);
             });
 
             $grid->actions([
