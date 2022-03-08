@@ -5,11 +5,14 @@ namespace App\Admin\Controllers;
 use App\Admin\Repositories\Chain;
 use Dcat\Admin\Form;
 use Dcat\Admin\Grid;
-use Dcat\Admin\Show;
 use Dcat\Admin\Http\Controllers\AdminController;
+use Dcat\Admin\Show;
+use Dcat\Admin\Widgets\Card;
 
 class ChainController extends AdminController
 {
+    const StatusLabel = ['关闭', '开启'];
+
     /**
      * Make a grid builder.
      *
@@ -19,20 +22,39 @@ class ChainController extends AdminController
     {
         return Grid::make(new Chain(), function (Grid $grid) {
             $grid->column('id')->sortable();
-            $grid->column('chainId');
-            $grid->column('url');
-            $grid->column('icon');
             $grid->column('name');
-            $grid->column('status');
+            $grid->column('title');
+            $grid->column('icon')->image("", 50);
+            $grid->column('chainId');
+            $grid->column('sort')->sortable();
+            $grid->column('content', "详情")
+                ->display('详情') // 设置按钮名称
+                ->expand(function () {
+                    // 返回显示的详情
+                    // 这里返回 content 字段内容，并用 Card 包裹起来
+                    $card = new Card();
+                    $content = <<<EOF
+                       节点: $this->url<br/><br/>
+                       Bridge	: $this->bridge<br/><br/>
+                       BridgeManager: $this->bridge_manager<br/><br/>
+                       同步高度: $this->syncNumber<br/><br/>
+                       单次同步数量: $this->syncLimit<br/>
+
+EOF;
+                    $card->content($content);
+                    return "<div style='padding:10px 10px 0'>$card</div>";
+                });
+
+//            $grid->column('url');
+            $grid->column('status')->select(self::StatusLabel);
             $grid->column('gwei');
             $grid->column('manager_gwei');
-            $grid->column('sort');
-            $grid->column('title');
-            $grid->column('bridge');
-            $grid->column('bridge_manager');
-            $grid->column('syncNumber');
-            $grid->column('syncLimit');
+//            $grid->column('syncNumber');
+//            $grid->column('syncLimit');
+//            $grid->column('bridge');
+//            $grid->column('bridge_manager');
 
+            $grid->disableFilterButton();
             $grid->filter(function (Grid\Filter $filter) {
                 $filter->equal('id');
 
@@ -75,7 +97,7 @@ class ChainController extends AdminController
             $form->text('sort');
             $form->text('title');
             $form->text('url');
-            $form->text('status');
+            $form->select('status')->options(self::StatusLabel);
             $form->text('bridge');
             $form->text('bridge_manager');
             $form->text('gwei');
