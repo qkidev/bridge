@@ -97,6 +97,8 @@ const withdraw = async () => {
         const number = await provider.getBlockNumber()
         console.log("当前高度:"+number)
         const wallet = new ethers.Wallet(process.env.PK, provider)
+        let address = await wallet.getAddress();
+        console.log("管理员地址:"+address)
         managers[chain.chainId] = new ethers.Contract(chain['bridge_manager'], abi.bridgeManager(), wallet)
     }
 
