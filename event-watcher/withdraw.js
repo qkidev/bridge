@@ -94,8 +94,8 @@ const withdraw = async () => {
     for (const chain of chains) {
         gweis[chain.chainId] = chain['manager_gwei'] + ""
         const provider = new ethers.providers.JsonRpcProvider(chain.url)
-        const number = await provider.getBlockNumber()
-        console.log(number)
+        const number = await provider.getBolckNumber()
+        console.log("当前同步高度:"+number)
         const wallet = new ethers.Wallet(process.env.PK, provider)
         managers[chain.chainId] = new ethers.Contract(chain['bridge_manager'], abi.bridgeManager(), wallet)
     }
@@ -117,6 +117,8 @@ const withdraw = async () => {
             if (manager) {
                 let isSuccess = false
                 let tryNum = 0
+                console.log("开始处理")
+                console.log(log)
                 while (!isSuccess) {
                     try {
                         tryNum += 1
@@ -130,7 +132,7 @@ const withdraw = async () => {
                         console.log("SubmitTransaction")
                         isSuccess = true
                     } catch (e) {
-                        console.log(tryNum)
+                        console.log("第"+tryNum+"次重试")
                         if (tryNum > 10) isSuccess = true
                     }
                 }
