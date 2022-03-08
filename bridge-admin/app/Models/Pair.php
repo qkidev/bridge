@@ -15,10 +15,10 @@ class Pair extends Model
 
     public static function getPairs()
     {
-        return Cache::remember('bridgePairs', 11400, function () {
+        return Cache::remember('get_pairs', 11400, function () {
             $pairs = [];
             $chainTitle = Chain::getChains();
-            Pair::query()->get()->map(function ($item) use (&$pairs, $chainTitle) {
+            Pair::query()->orderByDesc("name")->get()->map(function ($item) use (&$pairs, $chainTitle) {
                 $str = $item->name;
                 $str .= " (" . $chainTitle[$item->fromChain];
                 $str .= "=>" . $chainTitle[$item->toChain] . ")";

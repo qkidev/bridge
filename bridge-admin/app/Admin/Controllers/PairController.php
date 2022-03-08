@@ -15,7 +15,7 @@ use Dcat\Admin\Widgets\Card;
 
 class PairController extends AdminController
 {
-    const StatusLabel = ['关闭', '开启'];
+    const isStop = ['开启', '关闭'];
     const IsMain = ['否', '是'];
     const IsNative = ['否', '是'];
 
@@ -29,15 +29,22 @@ class PairController extends AdminController
         Admin::js("/js/ethers-5.2.umd.min.js");
         return Grid::make(new Pair(), function (Grid $grid) {
             $grid->column('id')->sortable();
-            $grid->column('name');
-            $grid->column('累计手续费')->display(function () {
-                $fee = Log::query()->where("pairId", $this->id)->sum("fee");
-                $style = "";
-                if ($fee > 0) {
-                    $style = 'color: red';
+            $grid->column('name')->sortable();
+
+            $name = $grid->model()->filter()->input('name', false);
+            $id = $grid->model()->filter()->input('id', false);
+            $search = $name || $id;
+            $grid->header('<html><b>查看累计手续费,请先在上方搜索币种或筛选交易对</b></html>');
+
+            $grid->column('withdraw_fee')->editable();
+            $grid->column('累计手续费')->display(function () use ($search) {
+                $fee = "0";
+                if ($search) {
+                    $fee = Log::query()->where("pairId", $this->id)->sum("fee");
                 }
-                return "<html><b style=\"{$style}\">{$fee}</b></html>";
-            });
+
+                return $fee;
+            })->label();
 
             $grid->column('fromChain')->using(Chain::getChains());
             $grid->column('toChain')->using(Chain::getChains());
@@ -61,7 +68,7 @@ EOF;
                     return "<div style='padding:10px 10px 0'>$card</div>";
                 });
 
-            $grid->column('isStop')->select(self::StatusLabel);
+            $grid->column('isStop')->select(self::isStop);
             $grid->column('isMain')->select(self::IsMain);
             $grid->column('isNative')->select(self::IsNative);
             $grid->column('minValue')->sortable()->editable();
@@ -72,48 +79,21 @@ EOF;
 
             $grid->filter(function (Grid\Filter $filter) {
                 $filter->expand()->panel();
-                $filter->like("name")->width(3);
+                $filter->equal("name")->width(3);
                 $filter->equal('id', "交易对")->select(\App\Models\Pair::getPairs())->width(3);
                 $filter->equal('fromChain')->select(Chain::getChains())->width(3);
                 $filter->equal('toChain')->select(Chain::getChains())->width(3);
-                $filter->equal('isStop')->select(self::StatusLabel)->width(3);
+                $filter->equal('isStop')->select(self::isStop)->width(3);
                 $filter->equal('isMain')->select(self::IsMain)->width(3);
                 $filter->equal('isNative')->select(self::IsNative)->width(3);
 
-                $filter->like("fromToken")->width(3);
-                $filter->like("toToken")->width(3);
+                $filter->equal("fromToken")->width(3);
+                $filter->equal("toToken")->width(3);
             });
 
             $grid->actions([
                 new InsertPair()
             ]);
-        });
-    }
-
-    /**
-     * Make a show builder.
-     *
-     * @param mixed $id
-     *
-     * @return Show
-     */
-    protected function detail($id)
-    {
-        return Show::make($id, new Pair(), function (Show $show) {
-            $show->field('id');
-            $show->field('bridgeFee');
-            $show->field('decimal');
-            $show->field('fromChain');
-            $show->field('fromPair');
-            $show->field('icon');
-            $show->field('isMain');
-            $show->field('minValue');
-            $show->field('name');
-            $show->field('sort');
-            $show->field('title');
-            $show->field('toChain');
-            $show->field('tokenFee');
-            $show->field('toPair');
         });
     }
 
@@ -154,6 +134,35 @@ EOF;
             $form->text('sort')->default(0);
             $form->text('feeMax')->default(0);
             $form->text('feeMin')->default(0);
+            $form->text('withdraw_fee');
+        });
+    }
+
+    /**
+     * Make a show builder.
+     *
+     * @param mixed $id
+     *
+     * @return Show
+     */
+    protected function detail($id)
+    {
+        return Show::make($id, new Pair(), function (Show $show) {
+            $show->field('id');
+            $show->field('bridgeFee');
+            $show->field('decimal');
+            $show->field('fromChain');
+            $show->field('fromPair');
+            $show->field('icon');
+            $show->field('isMain');
+            $show->field('minValue');
+            $show->field('name');
+            $show->field('sort');
+            $show->field('title');
+            $show->field('toChain');
+            $show->field('tokenFee');
+            $show->field('toPair');
+            $show->field('withdraw_fee');
         });
     }
 }
