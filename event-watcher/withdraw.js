@@ -95,7 +95,7 @@ const withdraw = async () => {
         gweis[chain.chainId] = chain['manager_gwei'] + ""
         const provider = new ethers.providers.JsonRpcProvider(chain.url)
         const number = await provider.getBolckNumber()
-        console.log("当前同步高度:"+number)
+        console.log("当前高度:"+number)
         const wallet = new ethers.Wallet(process.env.PK, provider)
         managers[chain.chainId] = new ethers.Contract(chain['bridge_manager'], abi.bridgeManager(), wallet)
     }

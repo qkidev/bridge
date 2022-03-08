@@ -162,7 +162,7 @@ const sync = async () => {
         }
 
 
-        console.log(chain.chainId, toNum)
+        console.log("新增 链id:"+chain.chainId+" 数量:"+ toNum)
         await setSyncNumber(chain.chainId, toNum)
     }
 }
