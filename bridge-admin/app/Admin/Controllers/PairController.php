@@ -30,14 +30,20 @@ class PairController extends AdminController
         return Grid::make(new Pair(), function (Grid $grid) {
             $grid->column('id')->sortable();
             $grid->column('name');
-            $grid->column('累计手续费')->display(function () {
-                $fee = Log::query()->where("pairId", $this->id)->sum("fee");
-                $style = "";
-                if ($fee > 0) {
-                    $style = 'color: red';
+
+            $name = $grid->model()->filter()->input('name', false);
+            $id = $grid->model()->filter()->input('id', false);
+            $search = $name || $id;
+            $grid->header('<html><b>查看累计手续费,请先在上方搜索币种或筛选交易对</b></html>');
+
+            $grid->column('累计手续费')->display(function () use ($search) {
+                $fee = "0";
+                if ($search) {
+                    $fee = Log::query()->where("pairId", $this->id)->sum("fee");
                 }
-                return "<html><b style=\"{$style}\">{$fee}</b></html>";
-            });
+
+                return $fee;
+            })->label();
 
             $grid->column('fromChain')->using(Chain::getChains());
             $grid->column('toChain')->using(Chain::getChains());
@@ -72,7 +78,7 @@ EOF;
 
             $grid->filter(function (Grid\Filter $filter) {
                 $filter->expand()->panel();
-                $filter->like("name")->width(3);
+                $filter->equal("name")->width(3);
                 $filter->equal('id', "交易对")->select(\App\Models\Pair::getPairs())->width(3);
                 $filter->equal('fromChain')->select(Chain::getChains())->width(3);
                 $filter->equal('toChain')->select(Chain::getChains())->width(3);
@@ -80,40 +86,13 @@ EOF;
                 $filter->equal('isMain')->select(self::IsMain)->width(3);
                 $filter->equal('isNative')->select(self::IsNative)->width(3);
 
-                $filter->like("fromToken")->width(3);
-                $filter->like("toToken")->width(3);
+                $filter->equal("fromToken")->width(3);
+                $filter->equal("toToken")->width(3);
             });
 
             $grid->actions([
                 new InsertPair()
             ]);
-        });
-    }
-
-    /**
-     * Make a show builder.
-     *
-     * @param mixed $id
-     *
-     * @return Show
-     */
-    protected function detail($id)
-    {
-        return Show::make($id, new Pair(), function (Show $show) {
-            $show->field('id');
-            $show->field('bridgeFee');
-            $show->field('decimal');
-            $show->field('fromChain');
-            $show->field('fromPair');
-            $show->field('icon');
-            $show->field('isMain');
-            $show->field('minValue');
-            $show->field('name');
-            $show->field('sort');
-            $show->field('title');
-            $show->field('toChain');
-            $show->field('tokenFee');
-            $show->field('toPair');
         });
     }
 
@@ -154,6 +133,33 @@ EOF;
             $form->text('sort')->default(0);
             $form->text('feeMax')->default(0);
             $form->text('feeMin')->default(0);
+        });
+    }
+
+    /**
+     * Make a show builder.
+     *
+     * @param mixed $id
+     *
+     * @return Show
+     */
+    protected function detail($id)
+    {
+        return Show::make($id, new Pair(), function (Show $show) {
+            $show->field('id');
+            $show->field('bridgeFee');
+            $show->field('decimal');
+            $show->field('fromChain');
+            $show->field('fromPair');
+            $show->field('icon');
+            $show->field('isMain');
+            $show->field('minValue');
+            $show->field('name');
+            $show->field('sort');
+            $show->field('title');
+            $show->field('toChain');
+            $show->field('tokenFee');
+            $show->field('toPair');
         });
     }
 }
