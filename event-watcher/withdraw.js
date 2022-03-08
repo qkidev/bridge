@@ -135,6 +135,7 @@ const withdraw = async () => {
                         isSuccess = true
                     } catch (e) {
                         console.log("第"+tryNum+"次重试")
+                        console.log(e)
                         if (tryNum > 10) isSuccess = true
                     }
                 }
