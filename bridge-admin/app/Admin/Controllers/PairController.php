@@ -83,7 +83,7 @@ EOF;
                 $filter->equal('id', "交易对")->select(\App\Models\Pair::getPairs())->width(3);
                 $filter->equal('fromChain')->select(Chain::getChains())->width(3);
                 $filter->equal('toChain')->select(Chain::getChains())->width(3);
-                $filter->equal('isStop')->select(self::StatusLabel)->width(3);
+                $filter->equal('isStop')->select(self::isStop)->width(3);
                 $filter->equal('isMain')->select(self::IsMain)->width(3);
                 $filter->equal('isNative')->select(self::IsNative)->width(3);
 
