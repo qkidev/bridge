@@ -29,7 +29,7 @@ class PairController extends AdminController
         Admin::js("/js/ethers-5.2.umd.min.js");
         return Grid::make(new Pair(), function (Grid $grid) {
             $grid->column('id')->sortable();
-            $grid->column('name');
+            $grid->column('name')->sortable();
 
             $name = $grid->model()->filter()->input('name', false);
             $id = $grid->model()->filter()->input('id', false);
