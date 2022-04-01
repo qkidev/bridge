@@ -16,7 +16,11 @@ return [
         'withdrawTime' => '跨入时间',
         'description' => '概述',
         "fee" => "手续费",
-        "amount" => "实际到账"
+        "amount" => "实际到账",
+        'withdrawSubmit' => '已验证',
+        'overMax' => '超限',
+        'remark' => '备注',
+        'is_fail' => '失败的',
     ],
     'options' => [
     ],
