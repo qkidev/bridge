@@ -89,6 +89,8 @@ EOF;
             $grid->actions([
                 new CheckWithdraw()
             ]);
+            $grid->disableEditButton();
+            $grid->disableCreateButton();
         });
     }
 
