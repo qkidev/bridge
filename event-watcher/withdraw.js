@@ -105,8 +105,8 @@ const withdraw = async () => {
         const number = await provider.getBlockNumber()
         console.log("[" + chain['name'] + "]" + "当前高度:" + number)
         const wallet = new ethers.Wallet(process.env.PK, provider)
-        let address = await wallet.getAddress();
-        console.log("管理员地址:" + address)
+        // let address = await wallet.getAddress();
+        // console.log("管理员地址:" + address)
         managers[chain.chainId] = new ethers.Contract(chain['bridge_manager'], abi.bridgeManager(), wallet)
     }
 
@@ -133,8 +133,10 @@ const withdraw = async () => {
                         tryNum += 1
                         const amount = ethers.utils.parseUnits(log['amount'], pair['decimal'])
                         const isNative = pair['isNative'] === 1
+                        let gasPrice = ethers.utils.parseUnits(gweis[log['toChain']], 'gwei')
                         const tx = await manager['submitTransaction'](log['fromChain'], log['depositHash'], pair['fromToken'], log['recipient'], amount, isNative, !pair['isMain'], {
-                            gasPrice: ethers.utils.parseUnits(gweis[log['toChain']], 'gwei'),
+                            gasPrice: gasPrice,
+                            gasLimit: '40000'
                         })
                         await tx.wait()
                         await submitWithdraw(log['id'])
@@ -143,9 +145,10 @@ const withdraw = async () => {
                     } catch (e) {
                         console.log("[logId: " + log['id'] + "]" + "第" + tryNum + "次重试")
                         if (tryNum > 5) {
-                            console.log(e)
                             isSuccess = true
-                            let remark = "[" + e.code + "] error: " + e.reason;
+                            let _err = e.error?.error?.message || e.error?.data?.message || 'error'
+                            let remark = "[" + e.code + "] error: " + e.reason +"; "+ _err;
+                            console.log(remark)
                             await withdrawFail(log['id'], remark)
                         }
                     }
