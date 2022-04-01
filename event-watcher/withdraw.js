@@ -31,7 +31,7 @@ const getChains = () => {
 
 const getUnWithdrawLog = () => {
     return new Promise((resolve, reject) => {
-        connection.query('SELECT * FROM log WHERE `withdrawHash`is null AND amount > 0 AND `withdrawSubmit` = 0 AND `overMax` = 0 ORDER BY `id` DESC', (error, results, fields) => {
+        connection.query('SELECT * FROM log WHERE `withdrawSubmit` = 0 AND `overMax` = 0 AND is_fail = 0 AND `withdrawHash`is null ORDER BY `id` DESC', (error, results, fields) => {
             if (error) {
                 return reject(error)
             } else {
@@ -50,6 +50,14 @@ const submitWithdraw = (id) => {
     })
 }
 
+const withdrawFail = (id, remark) => {
+    return new Promise((resolve, reject) => {
+        connection.query("UPDATE log SET `is_fail` = 1, remark = ? WHERE `id` = ?", [remark, id], function (error, results, fields) {
+            if (error) return reject(error)
+            return resolve(results)
+        });
+    })
+}
 
 const getPairById = (id) => {
     return new Promise((resolve, reject) => {
@@ -95,10 +103,10 @@ const withdraw = async () => {
         gweis[chain.chainId] = chain['manager_gwei'] + ""
         const provider = new ethers.providers.JsonRpcProvider(chain.url)
         const number = await provider.getBlockNumber()
-        console.log("当前高度:"+number)
+        console.log("[" + chain['name'] + "]" + "当前高度:" + number)
         const wallet = new ethers.Wallet(process.env.PK, provider)
         let address = await wallet.getAddress();
-        console.log("管理员地址:"+address)
+        console.log("管理员地址:" + address)
         managers[chain.chainId] = new ethers.Contract(chain['bridge_manager'], abi.bridgeManager(), wallet)
     }
 
@@ -119,8 +127,7 @@ const withdraw = async () => {
             if (manager) {
                 let isSuccess = false
                 let tryNum = 0
-                console.log("开始处理")
-                console.log(log)
+                console.log("开始处理" + " [logId: " + log['id'] + "]")
                 while (!isSuccess) {
                     try {
                         tryNum += 1
@@ -134,9 +141,13 @@ const withdraw = async () => {
                         console.log("SubmitTransaction")
                         isSuccess = true
                     } catch (e) {
-                        console.log("第"+tryNum+"次重试")
-                        console.log(e)
-                        if (tryNum > 10) isSuccess = true
+                        console.log("[logId: " + log['id'] + "]" + "第" + tryNum + "次重试")
+                        if (tryNum > 5) {
+                            console.log(e)
+                            isSuccess = true
+                            let remark = "[" + e.code + "] error: " + e.reason;
+                            await withdrawFail(log['id'], remark)
+                        }
                     }
                 }
             }
