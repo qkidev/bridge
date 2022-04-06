@@ -136,7 +136,6 @@ const withdraw = async () => {
                         let gasPrice = ethers.utils.parseUnits(gweis[log['toChain']], 'gwei')
                         const tx = await manager['submitTransaction'](log['fromChain'], log['depositHash'], pair['fromToken'], log['recipient'], amount, isNative, !pair['isMain'], {
                             gasPrice: gasPrice,
-                            gasLimit: '40000'
                         })
                         await tx.wait()
                         await submitWithdraw(log['id'])
