@@ -82,6 +82,9 @@ EOF;
                 $filter->equal('fromChain')->select(Chain::getChains())->width(3);
                 $filter->equal('toChain')->select(Chain::getChains())->width(3);
                 $filter->equal('withdrawSubmit')->select(self::StatusLabel)->width(3);
+                $filter->where('withdrawTime', function ($q) {
+                    $q->whereraw('withdrawTime is null');
+                }, "未到账")->select(['是'])->width(3);
                 $filter->equal('is_fail')->select(self::StatusLabel)->width(3);
                 $filter->equal('overMax')->select(self::StatusLabel)->width(3);
             });
