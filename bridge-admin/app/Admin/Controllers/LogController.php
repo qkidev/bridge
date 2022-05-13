@@ -51,6 +51,9 @@ class LogController extends AdminController
                 ->else()
                 ->using(self::StatusLabel);
 
+            $grid->column('fee')->editable();
+            $grid->column('amount')->editable();
+
             $grid->column('content', "详情")
                 ->display('详情') // 设置按钮名称
                 ->expand(function () {
@@ -133,6 +136,8 @@ EOF;
             $form->text('depositTime');
             $form->text('fromChain');
             $form->text('pairId');
+            $form->text('fee');
+            $form->text('amount');
             $form->text('recipient');
             $form->text('toChain');
             $form->text('value');
