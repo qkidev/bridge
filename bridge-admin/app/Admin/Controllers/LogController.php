@@ -51,6 +51,9 @@ class LogController extends AdminController
                 ->else()
                 ->using(self::StatusLabel);
 
+            $grid->column('fee')->editable();
+            $grid->column('amount')->editable();
+
             $grid->column('content', "详情")
                 ->display('详情') // 设置按钮名称
                 ->expand(function () {
@@ -82,6 +85,9 @@ EOF;
                 $filter->equal('fromChain')->select(Chain::getChains())->width(3);
                 $filter->equal('toChain')->select(Chain::getChains())->width(3);
                 $filter->equal('withdrawSubmit')->select(self::StatusLabel)->width(3);
+                $filter->where('withdrawTime', function ($q) {
+                    $q->whereraw('withdrawTime is null');
+                }, "未到账")->select(['是'])->width(3);
                 $filter->equal('is_fail')->select(self::StatusLabel)->width(3);
                 $filter->equal('overMax')->select(self::StatusLabel)->width(3);
             });
@@ -130,6 +136,8 @@ EOF;
             $form->text('depositTime');
             $form->text('fromChain');
             $form->text('pairId');
+            $form->text('fee');
+            $form->text('amount');
             $form->text('recipient');
             $form->text('toChain');
             $form->text('value');

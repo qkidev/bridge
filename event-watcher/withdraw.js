@@ -31,7 +31,7 @@ const getChains = () => {
 
 const getUnWithdrawLog = () => {
     return new Promise((resolve, reject) => {
-        connection.query('SELECT * FROM log WHERE `withdrawSubmit` = 0 AND `overMax` = 0 AND is_fail = 0 AND `withdrawHash`is null ORDER BY `id` DESC', (error, results, fields) => {
+        connection.query('SELECT * FROM log WHERE `withdrawSubmit` = 0 AND `overMax` = 0 AND `withdrawHash`is null ORDER BY `id` DESC', (error, results, fields) => {
             if (error) {
                 return reject(error)
             } else {

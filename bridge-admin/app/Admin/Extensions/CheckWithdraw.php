@@ -63,10 +63,83 @@ $('.grid-check-row').on('click',   function() {
                 "internalType": "address",
                 "name": "_bridgeAddress",
                 "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_owner",
+                "type": "address"
             }
         ],
         "stateMutability": "nonpayable",
         "type": "constructor"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "fromChainId",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "bytes",
+                "name": "txHash",
+                "type": "bytes"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "toToken",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "recipient",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "bytes32",
+                "name": "transactionId",
+                "type": "bytes32"
+            },
+            {
+                "indexed": false,
+                "internalType": "address",
+                "name": "sender",
+                "type": "address"
+            }
+        ],
+        "name": "Confirmation",
+        "type": "event"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "name": "Managers",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
     },
     {
         "inputs": [],
@@ -84,12 +157,49 @@ $('.grid-check-row').on('click',   function() {
     {
         "inputs": [
             {
-                "internalType": "bytes",
+                "internalType": "bytes32",
                 "name": "",
-                "type": "bytes"
+                "type": "bytes32"
+            },
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
             }
         ],
-        "name": "isComplete",
+        "name": "confirmations",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "transactionId",
+                "type": "bytes32"
+            }
+        ],
+        "name": "executeTransaction",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "bytes32",
+                "name": "transactionId",
+                "type": "bytes32"
+            }
+        ],
+        "name": "isConfirmed",
         "outputs": [
             {
                 "internalType": "bool",
@@ -243,8 +353,13 @@ $('.grid-check-row').on('click',   function() {
         "inputs": [
             {
                 "internalType": "uint256",
-                "name": "toChainId",
+                "name": "fromChainId",
                 "type": "uint256"
+            },
+            {
+                "internalType": "bytes",
+                "name": "txHash",
+                "type": "bytes"
             },
             {
                 "internalType": "address",
@@ -258,31 +373,70 @@ $('.grid-check-row').on('click',   function() {
             },
             {
                 "internalType": "uint256",
-                "name": "value",
+                "name": "amount",
                 "type": "uint256"
             },
             {
-                "internalType": "bytes",
-                "name": "depositHash",
-                "type": "bytes"
+                "internalType": "bool",
+                "name": "isNative",
+                "type": "bool"
+            },
+            {
+                "internalType": "bool",
+                "name": "isMain",
+                "type": "bool"
             }
         ],
-        "name": "withdraw",
-        "outputs": [],
+        "name": "submitTransaction",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
         "stateMutability": "nonpayable",
         "type": "function"
     },
     {
         "inputs": [
             {
+                "internalType": "bytes32",
+                "name": "",
+                "type": "bytes32"
+            }
+        ],
+        "name": "transactions",
+        "outputs": [
+            {
                 "internalType": "uint256",
-                "name": "toChainId",
+                "name": "fromChainId",
                 "type": "uint256"
             },
             {
-                "internalType": "address payable",
+                "internalType": "bytes",
+                "name": "txHash",
+                "type": "bytes"
+            },
+            {
+                "internalType": "address",
+                "name": "toToken",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
                 "name": "recipient",
                 "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bool",
+                "name": "isNative",
+                "type": "bool"
             },
             {
                 "internalType": "bool",
@@ -290,19 +444,12 @@ $('.grid-check-row').on('click',   function() {
                 "type": "bool"
             },
             {
-                "internalType": "uint256",
-                "name": "value",
-                "type": "uint256"
-            },
-            {
-                "internalType": "bytes",
-                "name": "hash",
-                "type": "bytes"
+                "internalType": "bool",
+                "name": "executed",
+                "type": "bool"
             }
         ],
-        "name": "withdrawNative",
-        "outputs": [],
-        "stateMutability": "nonpayable",
+        "stateMutability": "view",
         "type": "function"
     }
 ]
