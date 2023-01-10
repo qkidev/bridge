@@ -122,7 +122,17 @@ const sync = async () => {
             const pair = await getPair(chain.chainId, toChainId, fromToken, toToken)
             if (pair) {
                 value = (value / 10 ** pair['decimal']).toFixed(pair['decimal'])
-                const fee = (value * pair['bridgeFee'] / 100).toFixed(pair['decimal'])
+                let fee = (value * pair['bridgeFee'] / 100).toFixed(pair['decimal'])
+                const haveFeeMin = pair['feeMin'] * 1 > 0
+                const haveFeeMax = pair['feeMax'] * 1 > 0
+
+                if (haveFeeMin) {
+                    if (fee < pair['feeMin']) fee = pair['feeMin'] * 1
+                }
+                if (haveFeeMax) {
+                    if (fee > pair['feeMax']) fee = pair['feeMax'] * 1
+                }
+
                 let amount = ethers.utils.parseUnits((value - fee).toFixed(pair['decimal']), pair['decimal'])
                 amount = (amount / 10 ** pair['decimal']).toFixed(pair['decimal'])
                 logSave(pair.id, recipient, value, chain.chainId, toChainId, log.transactionHash, fee, amount)
@@ -140,7 +150,17 @@ const sync = async () => {
             const pair = await getPairNative(chain.chainId, toChainId, isMain)
             if (pair) {
                 value = (value / 10 ** pair['decimal']).toFixed(pair['decimal'])
-                const fee = (value * pair['bridgeFee'] / 100).toFixed(pair['decimal'])
+                let fee = (value * pair['bridgeFee'] / 100).toFixed(pair['decimal'])
+                const haveFeeMin = pair['feeMin'] * 1 > 0
+                const haveFeeMax = pair['feeMax'] * 1 > 0
+
+                if (haveFeeMin) {
+                    if (fee < pair['feeMin']) fee = pair['feeMin'] * 1
+                }
+                if (haveFeeMax) {
+                    if (fee > pair['feeMax']) fee = pair['feeMax'] * 1
+                }
+
                 let amount = ethers.utils.parseUnits((value - fee).toFixed(pair['decimal']), pair['decimal'])
                 amount = (amount / 10 ** pair['decimal']).toFixed(pair['decimal'])
                 logSave(pair.id, recipient, value, chain.chainId, toChainId, log.transactionHash, fee, amount)
